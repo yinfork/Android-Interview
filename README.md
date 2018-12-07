@@ -56,3 +56,9 @@
 
 ## 设计模式
 
+## 参考网站
+1. http://www.jackywang.tech/AndroidInterview-Q-A/interview/
+2. https://github.com/hadyang/interview
+3. https://github.com/Snailclimb/JavaGuide
+4. https://zhuanlan.zhihu.com/p/23533393
+5. https://github.com/it-interview/EasyJob
