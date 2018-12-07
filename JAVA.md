@@ -1,12 +1,66 @@
 ## Java
-
-#### Java内存
-1. GC
-2. Java虚拟机
-3. 垃圾回收
-
+#### 目录
+1. [Java基础](#java_base)
+2. [Java集合框架](#java_collection)
+3. [Java内存](#java_memory)
 
 
+----
+
+
+<span id = "java_base"></span>
+#### Java基础
+1. 关于finally<br>
+	参考：https://www.cnblogs.com/fery/p/4709841.html
+	1. 不管有没有出现异常，finally块中代码都会执行
+	2. 当try和catch中有return时，finally仍然会执行，finally比return先执行
+	3. **finally是在return后面的表达式运算后执行的**（此时并没有返回运算后的值，而是先把要返回的值保存起来，管finally中的代码怎么样，返回的值都不会改变，仍然是之前保存的值），所以函数返回值是在finally执行前确定的
+	4. finally中最好不要包含return，否则程序会提前退出，返回值不是try或catch中保存的返回值
+	5. finally不执行的几种情况：程序提前终止如调用了System.exit, 病毒，断电
+
+2. final关键字<br>
+	1. final修饰的变量是常量，必须进行初始化，可以显示初始化，也可以通过构造函数进行初始化，如果不初始化编译会报错。
+	2. final修饰类，表示是最终类。最终类不能被继承, 最终方法不能被重写(可以重载)
+
+3. 接口与抽象类的区别
+	1. 一个子类只能继承一个抽象类，但能实现多个接口
+	2. 抽象类可以有构造方法，接口没有构造方法
+	3. 抽象类可以有普通成员变量，接口没有普通成员变量
+	4. 抽象类和接口都可有静态成员变量，抽象类中静态成员变量访问类型任意，接口只能public static final(默认)
+	5. 抽象类可以没有抽象方法，抽象类可以有普通方法,接口中都是抽象方法
+	6. 抽象类可以有静态方法，接口不能有静态方法
+	7. 抽象类中的方法可以是public、protected;接口方法只有public
+
+4. 异常关键字<br>
+	throw、throws、try...catch、finally
+	1. throws 用在方法签名上, 以便抛出的异常可以被调用者处理
+	2. throw 方法内部通过throw抛出异常
+	3. try 用于检测包住的语句块, 若有异常, catch子句捕获并执行catch块
+
+5. 异常的类型<br> 	所有的异常都是继承于Throwable接口
+	1. Error: 属于严重错误，如系统崩溃、虚拟机错误、动态链接失败等，这些错误无法恢复或者不可能捕捉，将导致应用程序中断，Error不需要捕获
+	2. Checked Exception: 继承于java.lang.Exception。其必须被try...catch语句块所捕获, 或者在方法签名里通过throws子句声明。受检查的异常必须在编译时被捕捉处理,因为Java编译器要进行检查, Java虚拟机也要进行检查, 以确保这个规则得到遵守。比如：IOException、ClassNotFoundException等
+	3. Unchecked Exception: 继承于Runtime Exception。需要程序员自己分析代码决定是否捕获和处理,比如空指针,被0除
+
+6. super出现在父类的子类中。有三种存在方式
+	1. super.xxx(xxx为变量名或对象名)意思是获取父类中xxx的变量或引用
+	2. super.xxx(); (xxx为方法名)意思是直接访问并调用父类中的方法
+	3. super() 调用父类构造
+	4. 注：super只能指代其直接父类
+
+7. this() & super()在构造方法中的区别
+	1. 调用super()必须写在子类构造方法的第一行, 否则编译不通过
+	2. super()是从子类调用父类构造, this()是在同一类中调用其他构造。但均需要放在第一行
+	3. 尽管可以用this调用一个构造器, 却不能调用2个
+	4. this和super不能出现在同一个构造器中, 否则编译不通过
+	5. this()、super()都指的对象,不可以在static环境中使用
+	6. **本质this指向本对象的指针。super是一个关键字**
+
+
+----
+
+
+<span id = "java_collection"></span>
 #### Java的集合框架
 1. 容器介绍<br>
 	1. List
@@ -115,50 +169,8 @@ Hashtable容器在竞争激烈的并发环境下表现出效率低下的原因�
 
 ----
 
-#### Java基础
-1. 关于finally<br>
-	参考：https://www.cnblogs.com/fery/p/4709841.html
-	1. 不管有没有出现异常，finally块中代码都会执行
-	2. 当try和catch中有return时，finally仍然会执行，finally比return先执行
-	3. **finally是在return后面的表达式运算后执行的**（此时并没有返回运算后的值，而是先把要返回的值保存起来，管finally中的代码怎么样，返回的值都不会改变，仍然是之前保存的值），所以函数返回值是在finally执行前确定的
-	4. finally中最好不要包含return，否则程序会提前退出，返回值不是try或catch中保存的返回值
-	5. finally不执行的几种情况：程序提前终止如调用了System.exit, 病毒，断电
-
-2. final关键字<br>
-	1. final修饰的变量是常量，必须进行初始化，可以显示初始化，也可以通过构造函数进行初始化，如果不初始化编译会报错。
-	2. final修饰类，表示是最终类。最终类不能被继承, 最终方法不能被重写(可以重载)
-
-3. 接口与抽象类的区别
-	1. 一个子类只能继承一个抽象类，但能实现多个接口
-	2. 抽象类可以有构造方法，接口没有构造方法
-	3. 抽象类可以有普通成员变量，接口没有普通成员变量
-	4. 抽象类和接口都可有静态成员变量，抽象类中静态成员变量访问类型任意，接口只能public static final(默认)
-	5. 抽象类可以没有抽象方法，抽象类可以有普通方法,接口中都是抽象方法
-	6. 抽象类可以有静态方法，接口不能有静态方法
-	7. 抽象类中的方法可以是public、protected;接口方法只有public
-
-4. 异常关键字<br>
-	throw、throws、try...catch、finally
-	1. throws 用在方法签名上, 以便抛出的异常可以被调用者处理
-	2. throw 方法内部通过throw抛出异常
-	3. try 用于检测包住的语句块, 若有异常, catch子句捕获并执行catch块
-
-5. 异常的类型<br> 	所有的异常都是继承于Throwable接口
-	1. Error: 属于严重错误，如系统崩溃、虚拟机错误、动态链接失败等，这些错误无法恢复或者不可能捕捉，将导致应用程序中断，Error不需要捕获
-	2. Checked Exception: 继承于java.lang.Exception。其必须被try...catch语句块所捕获, 或者在方法签名里通过throws子句声明。受检查的异常必须在编译时被捕捉处理,因为Java编译器要进行检查, Java虚拟机也要进行检查, 以确保这个规则得到遵守。比如：IOException、ClassNotFoundException等
-	3. Unchecked Exception: 继承于Runtime Exception。需要程序员自己分析代码决定是否捕获和处理,比如空指针,被0除
-
-6. super出现在父类的子类中。有三种存在方式
-	1. super.xxx(xxx为变量名或对象名)意思是获取父类中xxx的变量或引用
-	2. super.xxx(); (xxx为方法名)意思是直接访问并调用父类中的方法
-	3. super() 调用父类构造
-	4. 注：super只能指代其直接父类
-
-7. this() & super()在构造方法中的区别
-	1. 调用super()必须写在子类构造方法的第一行, 否则编译不通过
-	2. super()是从子类调用父类构造, this()是在同一类中调用其他构造。但均需要放在第一行
-	3. 尽管可以用this调用一个构造器, 却不能调用2个
-	4. this和super不能出现在同一个构造器中, 否则编译不通过
-	5. this()、super()都指的对象,不可以在static环境中使用
-	6. **本质this指向本对象的指针。super是一个关键字**
-
+<span id = "java_memory"></span>
+#### Java内存
+1. GC
+2. Java虚拟机
+3. 垃圾回收
