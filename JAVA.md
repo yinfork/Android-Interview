@@ -376,7 +376,8 @@ Minor Gc和Full GC 有什么不同呢？
 3. 停止线程的方法<br>
 	1. 不能使用废弃的方法停止：stop(),suspend()
 	2. interrupt()方法虽然没有废弃，但是直接调用，线程时不用停止的。
-	3. 正确做法是使用 interrupted() 方法判断线程是否停止，如果是停止状态则return
+	3. 假如线程正在阻塞，调用 interrupt() 会让线程内部抛出InterruptedException，从而提早地终结被阻塞状态
+	4. 正确做法是使用 interrupted() 方法判断线程是否停止，如果是停止状态则return
 	
 	```
 	public class MyThread extends Thread {
