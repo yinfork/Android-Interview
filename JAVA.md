@@ -470,6 +470,8 @@ ThreadLocal 为解决多线程程序的并发问题提供了一种新的思路�
 
 11. 参考
 	1. https://github.com/hadyang/interview/blob/master/java/volatile.md
-	2. https://github.com/Snailclimb/JavaGuide/blob/master/Java%E7%9B%B8%E5%85%B3/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%B3%BB%E5%88%97.md 
+	2. https://github.com/hadyang/interview/blob/master/java/threadlocal.md
+	3. https://github.com/hadyang/interview/blob/master/java/synchronized.md
+	4. https://github.com/Snailclimb/JavaGuide/blob/master/Java%E7%9B%B8%E5%85%B3/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%B3%BB%E5%88%97.md 
 
 
