@@ -43,4 +43,110 @@
 		3. 以singleInstance模式启动的Activity具有独占性，即它会独自占用一个任务，被他开启的任何activity都会运行在其他任务中。 
 		4. 被singleInstance模式的Activity开启的其他activity，能够在新的任务中启动，但不一定开启新的任务，也可能在已有的一个任务中开启。
 
+2. 生命周期
+	1. Activity生命周期的7个方法
+		2. onCreate()：当Activity第一次被实例化的时候系统会调用，整个生命周期只调用1次这个方法。。
+		2. onStart()：当Activity可见未获得用户焦点不能交互时系统会调用。
+		3. onRestart()：当Activity已经停止然后重新被启动时系统会调用。
+		4. onResume()：当Activity可见且获得用户焦点能交互时系统会调用。
+		5. onPause()：当Activity失去焦点，但是还是可见状态时被系统调用。
+		6. onStop()：当Activity被新的Activity完全覆盖不可见时被系统调用。
+		7. onDestroy()：当Activity被用户调用finish()或按下返回键时系统调用，整个生命周期只调用1次。  
+	2. onNewIntent()相关
+		<br>启动SingleTop、SingleTask、SingleInstance模式的Activity时，如果栈顶(对于SingleTop)或栈中（对于SingleTask、SingleInstance）已经存在该Activity时，
+		1. 如果该Activity的实例存在并且在后台，走的生命周期: onNewIntent()---->onResart()------>onStart()----->onResume()。<br>
+		当调用到onNewIntent(intent)的时候，需要在onNewIntent() 中使用setIntent(intent)赋值给Activity的Intent.否则，后续的getIntent()都是得到老的Intent。
+		2. 如果该Activity的实例存在并且在前台，走的生命周期: onPause()---->onNewIntent()----->onResume()。<br>
+		3. 如果该Activity被系统回收，走的生命周期:走onCreate()------>onStart()------>onRestoreInstanceState()----->onResume()。
+		4. 处理Intent的例子：
+		
+			```
+			public void onCreate(Bundle savedInstanceState) {
+			    super.onCreate(savedInstanceState);
+			    setContentView(R.layout.main);
+			    processExtraData();
+			}
+			protected void onNewIntent(Intent intent) {
+			    super.onNewIntent(intent);
+			    setIntent(intent);//must store the new intent unless getIntent() will return the old one
+			    processExtraData();
+			}
+			private void processExtraData(){
+			    Intent intent = getIntent();
+			    //use the data received here
+			}
+			
+			```
+	2. 在一个Activity启动另一个Activity
+		1. 第一个Activity的启动顺序：onCreate()------>onStart()------>onResume()
+		2. 当另一个Activity启动时：第一个Activity onPause()------>第二个Activity onCreate()------>onStart()------>onResume()------>第一个Activity onStop()
+		3. 当返回到第一个Activity时：第二个Activity onPause()——> 第一个Activity onRestart()——>onStart()——>onResume()——>第二个Activity onStop()——>onDestroy()
+			
+	3. A B C 顺序的Activity，C Activity 后台被杀
+		
+		```
+		// SecondActivity 启动 ThirdActivity
+		ActivityStack: SecondActivity onPause
+		ActivityStack: ThirdActivity onCreate
+		ActivityStack: ThirdActivity onStart
+		ActivityStack: ThirdActivity onResume
+		ActivityStack: SecondActivity onSaveInstanceState
+		ActivityStack: SecondActivity onStop
+		
+		// 应用退到后台
+		ActivityStack: ThirdActivity onPause
+		ActivityStack: ThirdActivity onSaveInstanceState
+		ActivityStack: ThirdActivity onStop
+		
+		// 系统后台杀进程，然后手动重新启动APP
+		ActivityStack: ThirdActivity onCreate
+		ActivityStack: ThirdActivity onStart
+		ActivityStack: ThirdActivity onRestoreInstanceState
+		ActivityStack: ThirdActivity onResume
+		
+		// 按返回键。创建SecondActivity，并调用SecondActivity的onRestoreInstanceState
+		ActivityStack: ThirdActivity onPause
+		ActivityStack: SecondActivity onCreate
+		ActivityStack: SecondActivity onStart
+		ActivityStack: SecondActivity onRestoreInstanceState
+		ActivityStack: SecondActivity onResume
+		ActivityStack: ThirdActivity onStop
+		ActivityStack: ThirdActivity onDestroy
+	```		
+		小结：
+		1. ThirdActivity后台时，APP被杀。由于已经调用了ThirdActivity的onSaveInstanceState，所以重启APP，恢复的是ThirdActivity
+		2. 多Activity时应用被杀，重启APP不会把多Activity都创建，只会创建栈顶的Activity，但是Activity栈记录还会保留，按Back键依然会返回并创建SecondActivity		
+		
+	4. A B C 顺序的Activity，C Activity 前台被杀
 
+		```
+		// 从SecondActivity跳转到ThirdActivity
+		ActivityStack: SecondActivity onPause
+		ActivityStack: ThirdActivity onCreate
+		ActivityStack: ThirdActivity onStart
+		ActivityStack: ThirdActivity onResume
+		ActivityStack: SecondActivity onSaveInstanceState
+		ActivityStack: SecondActivity onStop
+		
+		// ThirdActivity前台时，进程被杀
+		ActivityStack: SecondActivity onCreate
+		ActivityStack: SecondActivity onStart
+		ActivityStack: SecondActivity onRestoreInstanceState
+		ActivityStack: SecondActivity onResume
+		```
+		小结
+		1. 由于ThirdActivity没有来得及调用onSaveInstanceState，所以恢复的是SecondActivity
+		2. 出现情景：ThirdActivity 位于前台，不可能由于内存不足而被系统回收(内存不足，最多就抛OOM)。只可能出现Crash或被命令行强制kill。
+	
+	5. 不保留活动下
+		1. Activity退到后台: onPause() ----> onSaveInstanceState() ----> onStop() ----> onDestroy()
+		2. Activity回到前台: onCreate() ----> onStart() ----> onRestoreInstanceState() ----> onResume()
+		
+			
+3. 被系统回收时的Activity	
+	1. 生命周期<br>
+		不会走onNewIntent()，走onCreate()------>onStart()------>onRestoreInstanceState()----->onResume()<br>
+		此时onCreate(Bundle savedInstanceState) 中的 savedInstanceState是 savedInstanceState()时保存的Bundle。而第一次启动Activity的onCreate(), savedInstanceState会为null。
+	2. activity恢复原则<br>
+	如果多个activity在栈中，多个activity会被一起恢复吗？
+不会的，只会恢复栈顶的activity，但是栈是恢复了的。在按backspace之后，会创建下一个activity实例,
