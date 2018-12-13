@@ -113,6 +113,7 @@
 		ActivityStack: ThirdActivity onStop
 		ActivityStack: ThirdActivity onDestroy
 	```		
+	
 		小结：
 		1. ThirdActivity后台时，APP被杀。由于已经调用了ThirdActivity的onSaveInstanceState，所以重启APP，恢复的是ThirdActivity
 		2. 多Activity时应用被杀，重启APP不会把多Activity都创建，只会创建栈顶的Activity，但是Activity栈记录还会保留，按Back键依然会返回并创建SecondActivity		
