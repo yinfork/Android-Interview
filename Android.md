@@ -45,13 +45,14 @@
 
 2. 生命周期
 	1. Activity生命周期的7个方法
-		2. onCreate()：当Activity第一次被实例化的时候系统会调用，整个生命周期只调用1次这个方法。。
+		1. onCreate()：当Activity第一次被实例化的时候系统会调用，整个生命周期只调用1次这个方法。。
 		2. onStart()：当Activity可见未获得用户焦点不能交互时系统会调用。
 		3. onRestart()：当Activity已经停止然后重新被启动时系统会调用。
 		4. onResume()：当Activity可见且获得用户焦点能交互时系统会调用。
 		5. onPause()：当Activity失去焦点，但是还是可见状态时被系统调用。
 		6. onStop()：当Activity被新的Activity完全覆盖不可见时被系统调用。
 		7. onDestroy()：当Activity被用户调用finish()或按下返回键时系统调用，整个生命周期只调用1次。  
+		
 	2. onNewIntent()相关
 		<br>启动SingleTop、SingleTask、SingleInstance模式的Activity时，如果栈顶(对于SingleTop)或栈中（对于SingleTask、SingleInstance）已经存在该Activity时，
 		1. 如果该Activity的实例存在并且在后台，走的生命周期: onNewIntent()---->onResart()------>onStart()----->onResume()。<br>
