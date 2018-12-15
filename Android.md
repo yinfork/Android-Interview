@@ -8,7 +8,8 @@
 
 <span id = "android_activity"></span>
 #### Activity介绍 [(TOP)](#home)
-1. 四种启动模式
+1. 四种启动模式<br>
+	Activity的管理采用任务栈的形式。对应以下4种启动模式(LaunchMode)
 	1. Standard<br>
 		标准模式。每次启动Activity都会创建新的实例。谁启动了这个Activity，那么这个Activity就运行在谁的Task中。不能使用非Activity类型的context启动这种模式的Activity，因为这种context并没有Task。
 		<br>
@@ -42,6 +43,9 @@
 		2. 以singleInstance模式启动的Activity在整个系统中是单例的，如果在启动这样的Activiyt时，已经存在了一个实例，那么会把它所在的任务调度到前台，重用这个实例。 
 		3. 以singleInstance模式启动的Activity具有独占性，即它会独自占用一个任务，被他开启的任何activity都会运行在其他任务中。 
 		4. 被singleInstance模式的Activity开启的其他activity，能够在新的任务中启动，但不一定开启新的任务，也可能在已有的一个任务中开启。
+	
+	5. 前台任务栈和后台任务栈交互<br>
+		假如前台任务栈是AB、后台任务栈是CD。假如以SingleTask的方式启动Activity D，只会清掉Activity C，不会清掉另外一个任务栈里面的AB。
 
 2. 生命周期
 	1. Activity生命周期的7个方法
@@ -144,6 +148,15 @@
 		1. Activity退到后台: onPause() ----> onSaveInstanceState() ----> onStop() ----> onDestroy()
 		2. Activity回到前台: onCreate() ----> onStart() ----> onRestoreInstanceState() ----> onResume()
 		
+	6. 横竖屏切换<br>
+		生命周期：onPause() -> onSaveInstanceState() -> onStop() -> onDestroy() -> onCreate() -> onStart() -> onRestoreInstanceState -> onResume()
+		<br>
+		可以通过在AndroidManifest文件的Activity中指定如下属性：
+		```
+		android:configChanges = "orientation| screenSize"
+		```
+		来避免横竖屏切换时Activity的销毁和重建。而是改为回调onConfigurationChanged()
+
 			
 3. 被系统回收时的Activity	
 	1. 生命周期<br>
@@ -152,3 +165,25 @@
 	2. activity恢复原则<br>
 	如果多个activity在栈中，多个activity会被一起恢复吗？
 不会的，只会恢复栈顶的activity，但是栈是恢复了的。在按backspace之后，会创建下一个activity实例,
+
+4. 几个Activity不常用的回调方法<br>
+	onContentChanged，onPostCreate，onPostResume
+	<br>
+	程序启动运行并结束上述生命周期的方法执行顺序是这样的：<br>
+onCreate –> **onContentChanged** –> onStart –> onRestoreInstanceState -> **onPostCreate** –> onResume –> **onPostResume** –> onPause –> onSaveInstanceState -> onStop –> onDestroy
+	1. onContentChanged<br>
+		onContentChanged()是Activity中的一个回调方法 当Activity的布局改动时，即setContentView()或者addContentView()方法执行完毕时就会调用该方法， 例如，Activity中各种View的findViewById()方法都可以放到该方法中。
+		
+	2. onPostCreate<br>
+		onPostCreate方法是指onCreate方法彻底执行完毕的回调
+
+	3. onPostResume<br>
+		onPostResume方法是指onResume方法彻底执行完毕的回调
+		
+5. Activity的三种运行状态
+	1. Resumed（活动状态）<br>
+	又叫Running状态，这个Activity正在屏幕上显示，并且有用户焦点。这个很好理解，就是用户正在操作的那个界面。
+	2. Paused（暂停状态）<br>
+这是一个比较不常见的状态。这个Activity在屏幕上是可见的，但是并不是在屏幕最前端的那个Activity。比如有另一个非全屏或者透明的Activity是Resumed状态，没有完全遮盖这个Activity。
+	3. Stopped（停止状态）<br>
+当Activity完全不可见时，此时Activity还在后台运行，仍然在内存中保留Activity的状态，并不是完全销毁。这个也很好理解，当跳转的另外一个界面，之前的界面还在后台，按回退按钮还会恢复原来的状态，大部分软件在打开的时候，直接按Home键，并不会关闭它，此时的Activity就是Stopped状态。		
