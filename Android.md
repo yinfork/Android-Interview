@@ -6,7 +6,6 @@
 
 ----
 
-
 <span id = "android_activity"></span>
 #### Activity [(TOP)](#home)
 1. 四种启动模式<br>
@@ -246,10 +245,8 @@ android的3个核心组件——Activity、services、广播接收器——是�
 		4. 去掉Category匹配失败的Intent Filter
 		5. 判断剩下的Intent Filter数目是否为0。如果为0查找失败返回异常；如果大于0，就按优先级排序，返回最高优先级的Intent Filter
 	
-		
-	
-	
-
+8. 其他<br>
+	1. 大部分不需要公开给外部调用的Activity，都应该设置成非公开：android:exported="false"
 
 ----
 
