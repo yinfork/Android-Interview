@@ -1,13 +1,14 @@
 ## Android
 <span id = "home"></span>
 #### 目录
-1. [Activity介绍](#android_activity)
+1. [Activity](#android_activity)
+2. [Service](#android_service)
 
 ----
 
 
 <span id = "android_activity"></span>
-#### Activity介绍 [(TOP)](#home)
+#### Activity [(TOP)](#home)
 1. 四种启动模式<br>
 	Activity的管理采用任务栈的形式。对应以下4种启动模式(LaunchMode)
 	1. Standard<br>
@@ -187,3 +188,73 @@ onCreate –> **onContentChanged** –> onStart –> onRestoreInstanceState -> *
 这是一个比较不常见的状态。这个Activity在屏幕上是可见的，但是并不是在屏幕最前端的那个Activity。比如有另一个非全屏或者透明的Activity是Resumed状态，没有完全遮盖这个Activity。
 	3. Stopped（停止状态）<br>
 当Activity完全不可见时，此时Activity还在后台运行，仍然在内存中保留Activity的状态，并不是完全销毁。这个也很好理解，当跳转的另外一个界面，之前的界面还在后台，按回退按钮还会恢复原来的状态，大部分软件在打开的时候，直接按Home键，并不会关闭它，此时的Activity就是Stopped状态。		
+
+6. Activity的两种启动方式
+	1. 显式启动:明确指定被启动对象的组件信息，包括包名和类名
+	2. 隐式启动:不需要明确指定组件信息
+
+7. Intent Filter<br>
+android的3个核心组件——Activity、services、广播接收器——是通过intent传递消息的。intent消息用于在运行时绑定不同的组件。<br> 
+在 Android 的 AndroidManifest.xml 配置文件中可以通过 intent-filter 节点为一个 Activity 指定其 Intent Filter，以便告诉系统该 Activity 可以响应什么类型的 Intent。<br>
+	intent-filter 的三大属性
+	1. Action<br>
+		一个 Intent Filter 可以包含多个 Action，Action 列表用于标示 Activity 所能接受的“动作”，它是一个用户自定义的字符串。
+		
+		```
+		<intent-filter > 
+		<action android:name="android.intent.action.MAIN" /> 
+		<action android:name="com.scu.amazing7Action" /> 
+		……
+		</intent-filter>
+		```
+		
+		在代码中使用以下语句便可以隐式启动该Intent对象
+		
+		```
+		Intent i=new Intent(); 
+		i.setAction("com.scu.amazing7Action");
+		```
+		
+		Action 列表中包含了“com.scu.amazing7Action”的 Activity 都将会匹配成功
+	
+	2. URL<br>
+		在 intent-filter 节点中，通过 data节点匹配外部数据，也就是通过 URI 携带外部数据给目标组件。<br>
+		注意：只有data的所有的属性都匹配成功时 URI 数据匹配才会成功
+		
+		```
+		<data android:mimeType="mimeType" 
+			android:scheme="scheme" 
+		 	android:host="host"
+		 	android:port="port" 
+		 	android:path="path"/>
+		```
+		
+	3. Category<br>
+		为组件定义一个 类别列表，当 Intent 中包含这个类别列表的所有项目时才会匹配成功。
+	
+		```
+		<intent-filter . . . >
+	   <action android:name="code android.intent.action.MAIN" />
+	   <category android:name="code　android.intent.category.LAUNCHER" />
+		</intent-filter>
+		```
+	
+	4. Activity 种 Intent Filter 的匹配过程
+		1. 加载所有的Intent Filter列表
+		2. 去掉action匹配失败的Intent Filter
+		3. 去掉url匹配失败的Intent Filter
+		4. 去掉Category匹配失败的Intent Filter
+		5. 判断剩下的Intent Filter数目是否为0。如果为0查找失败返回异常；如果大于0，就按优先级排序，返回最高优先级的Intent Filter
+	
+		
+	
+	
+
+
+----
+
+<span id = "android_service"></span>
+#### Service [(TOP)](#home)
+
+----
+
