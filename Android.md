@@ -260,9 +260,28 @@ TODO
 
 <span id = "android_view"></span>
 #### View [(TOP)](#home)
-1. 坐标体系
+1. View的坐标体系
 	1. View的坐标图<br>
-		注意x轴和y轴的方向
+		注意x轴和y轴的方向<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/android/view/view_x_y.png?raw=true)
+
+	2. 4个基本属性<br>
+		对应着View的四个顶点：top、left、right、bottom
+	
+	3. 宽度和高度的计算
+		1. width = right - left
+		2. height = bottom - top
+	
+	4. 坐标的偏移量
+		1. translationX: View左上角的点相对于父容器的X方向的偏移量
+		2. translationY: View左上角的点相对于父容器的Y方向的偏移量
+	
+	5. x、y的坐标<br>
+		x、y是表示View的左上角的点的坐标。当View平移的时候，top和left的原始值不会改变，改变的是 x、y、translationX 和 translationY。
+		1. x = left + translationX
+		2. y = top + translationY
+	
+	
 
 2. View的绘制流程
 
