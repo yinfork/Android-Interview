@@ -281,15 +281,15 @@ new指令执行完后，再按照程序员的意愿执行init方法后一个真�
 5. 垃圾收集算法
 	1. 标记-清除算法<br>
 		算法分为“标记”和“清除”阶段：首先标记出所有需要回收的对象，在标记完成后统一回收所有被标记的对象。它是最基础的收集算法，会带来两个明显的问题；1：效率问题和2：空间问题（标记清除后会产生大量不连续的碎片）
-	![](https://github.com/yinfork/Android-Interview/blob/master/res/jvm/mark_clear.png?raw=true)
+	![](https://github.com/yinfork/Android-Interview/blob/master/res/java/jvm/mark_clear.png?raw=true)
 
 	2. 复制算法<br>
 		为了解决效率问题，“复制”收集算法出现了。它可以将内存分为大小相同的两块，每次使用其中的一块。当这一块的内存使用完后，就将还存活的对象复制到另一块去，然后再把使用的空间一次清理掉。这样就使每次的内存回收都是对内存区间的一半进行回收。
-	![](https://github.com/yinfork/Android-Interview/blob/master/res/jvm/copy.png?raw=true)
+	![](https://github.com/yinfork/Android-Interview/blob/master/res/java/jvm/copy.png?raw=true)
 
 	3. 标记-整理算法<br>
 		根据老年代的特点特出的一种标记算法，标记过程仍然与“标记-清除”算法一样，但后续步骤不是直接对可回收对象回收，而是让所有存活的对象向一段移动，然后直接清理掉端边界以外的内存。
-	![](https://github.com/yinfork/Android-Interview/blob/master/res/jvm/resize.png?raw=true)
+	![](https://github.com/yinfork/Android-Interview/blob/master/res/java/jvm/resize.png?raw=true)
 
 	4. 分代收集算法<br>
 	当前虚拟机的垃圾收集都采用分代收集算法，这种算法没有什么新的思想，只是根据对象存活周期的不同将内存分为几块。一般将java堆分为新生代和老年代，这样我们就可以根据各个年代的特点选择合适的垃圾收集算法。
@@ -299,7 +299,7 @@ new指令执行完后，再按照程序员的意愿执行init方法后一个真�
 6. 堆内存分配与回收策略
 	1. 堆内存分布介绍<br>
 		堆内存分为新生代、老年代和永久代。新生代又被进一步分为：Eden区＋Survivor1区＋Survivor2区。值得注意的是，在 JDK 1.8中移除整个永久代，取而代之的是一个叫元空间（Metaspace）的区域（永久代使用的是JVM的堆内存空间，而元空间使用的是物理内存，直接受到本机的物理内存限制）。
-		![](https://github.com/yinfork/Android-Interview/blob/master/res/jvm/memory.jpeg?raw=true)
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/java/jvm/memory.jpeg?raw=true)
 	 
 	2. 对象优先在Eden区分配<br>
 大多数情况下，对象在新生代中Eden区分配。当Eden区没有足够空间进行分配时，虚拟机将发起一次Minor GC.
@@ -339,7 +339,7 @@ Minor Gc和Full GC 有什么不同呢？
 
 	3. 双亲委派模型<br>
 	双亲委派模型（Pattern Delegation Model）,要求除了顶层的启动类加载器外，其余的类加载器都应该有自己的父类加载器。这里父子关系通常是子类通过组合关系而不是继承关系来复用父加载器的代码。
-	![](https://github.com/yinfork/Android-Interview/blob/master/res/jvm/classloader.png?raw=true) <br>
+	![](https://github.com/yinfork/Android-Interview/blob/master/res/java/jvm/classloader.png?raw=true) <br>
 双亲委派模型的工作过程： 如果一个类加载器收到了类加载的请求，先把这个请求委派给父类加载器去完成（所以所有的加载请求最终都应该传送到顶层的启动类加载器中），只有当父加载器反馈自己无法完成加载请求时，子加载器才会尝试自己去加载。
 <br><br>
 使用双亲委派模型来组织类加载器之间的关系，有一个显而易见的好处就是java类随着它的类加载器一起具备了一种带有优先级的层次关系。

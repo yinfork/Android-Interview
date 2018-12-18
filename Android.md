@@ -3,6 +3,8 @@
 #### 目录
 1. [Activity](#android_activity)
 2. [Service](#android_service)
+3. [View](#android_view)
+
 
 ----
 
@@ -255,4 +257,18 @@ android的3个核心组件——Activity、services、广播接收器——是�
 TODO
 
 ----
+
+<span id = "android_view"></span>
+#### View [(TOP)](#home)
+1. 坐标体系
+	1. View的坐标图<br>
+		注意x轴和y轴的方向
+
+2. View的绘制流程
+
+3. View的事件分发流程
+
+4. View、Activity 和 Window的关系
+
+5. 几种Layout的性能比较
 
