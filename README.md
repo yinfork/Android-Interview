@@ -57,9 +57,14 @@
 ## 设计模式
 
 ## 参考网站
-1. http://www.jackywang.tech/AndroidInterview-Q-A/interview/
-2. https://github.com/hadyang/interview
-3. https://github.com/Snailclimb/JavaGuide
-4. https://zhuanlan.zhihu.com/p/23533393
-5. https://github.com/it-interview/EasyJob
-6. https://github.com/Mr-YangCheng/ForAndroidInterview/tree/master/android
+1. Java、算法等基础大方向
+	1. https://github.com/hadyang/interview
+	2. https://github.com/Snailclimb/JavaGuide
+	3. https://zhuanlan.zhihu.com/p/23533393
+	4. https://github.com/it-interview/EasyJob
+	
+2. 含有Android
+	1. https://github.com/LRH1993/android_interview
+	https://github.com/Mr-YangCheng/ForAndroidInterview/
+	2. http://www.jackywang.tech/AndroidInterview-Q-A/interview/
+	3. https://github.com/MindorksOpenSource/android-interview-questionstree/master/android
