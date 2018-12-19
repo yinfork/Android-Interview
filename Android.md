@@ -281,11 +281,101 @@ TODO
 		1. x = left + translationX
 		2. y = top + translationY
 	
+2. View的事件分发流程
+	1. 事件<br>
+		1. MotionEvent.ACTION_DOWN　：手指按下屏幕的瞬间（一切事件的开始）
+		2. MotionEvent.ACTION_MOVE　：手指在屏幕上移动
+		3. MotionEvent.ACTION_UP　：手指离开屏幕瞬间
+		4. MotionEvent.ACTION_CANCEL 　：取消手势，一般由程序产生，不会由用户产生
+		5. TODO 补充其他事件
 	
+	2. 点击事件传递的对象流程<br>
+		Activity（Window） -> ViewGroup -> View
+	
+	3. 事件分发的三个重要事件<br>
+		1. 事件分发: dispatchTouchEvent()。Activity、ViewGroup和View都有此方法。
+			1. return true :表示该View内部消化掉了所有事件。
+			2. return false :事件在本层不再继续进行分发，并交由上层控件的onTouchEvent方法进行消费（如果本层控件已经是Activity，那么事件将被系统消费或处理）。　
+			3. return super.dispatchTouchEvent(ev): 事件将分发给本层的事件拦截onInterceptTouchEvent 方法进行处理
+			
+		2. 事件拦截: onInterceptTouchEvent()。只有ViewGroup才有，Activity和View都没有
+			1. return true: 表示将事件进行拦截，并将拦截到的事件交由本层控件 的 onTouchEvent 进行处理；
+			2. return false: 则表示不对事件进行拦截，事件得以成功分发到子View。并由子View的dispatchTouchEvent进行处理。　
+			3. return super.onInterceptTouchEvent(ev): 默认不拦截该事件，和return true一样。
+		
+		3. 事件响应: onTouchEvent()。Activity、ViewGroup和View都有此方法。
+			1. return true: 表示onTouchEvent处理完事件后消费了此次事件。此时事件终结；
+			2. return fasle: 则表示不响应事件，那么该事件将会不断向上层View的onTouchEvent方法传递，直到某个View的onTouchEvent方法返回true，如果到了最顶层View还是返回false，那么认为该事件不消耗，则在同一个事件系列中，当前View无法再次接收到事件，该事件会交由Activity的onTouchEvent进行处理；　　
+			3. return super.dispatchTouchEvent(ev): 则表示不响应事件，结果与return false一样。
+	
+	4. 事件分发的流程	
+		1. 伪代码描述：
+				
+			```
+			// Activity
+			public boolean dispatchTouchEvent(MotionEvent ev) {
+		        if (getWindow().superDispatchTouchEvent(ev)) {
+		            return true;
+		        }
+		        return onTouchEvent(ev);
+		    }
+			
+			// ViewGroup
+			public boolean dispatchTouchEvent(MotionEvent ev) {
+			    boolean consume = false;
+			    if (onInterceptTouchEvent(ev)) {
+			        consume = onTouchEvent(ev);
+			    } else {
+			        consume = child.dispatchTouchEvent(ev);
+			    }
+			
+			    return consume;
+			}
+			
+			// View
+			public boolean dispatchTouchEvent(MotionEvent ev) {
+				// 省略了一堆其他事件的处理
+				return onTouchEvent(ev);
+		    }
+			```
+		2. 流程图
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/android/view/view_event.png?raw=true)
+		
+	5. 事件序列
+		1. 定义<br>
+			同一个事件序列是从手指触摸屏幕的那一刻起，到手指离开屏幕那一刻结束，这个过程中所产生的一系列事件。这个事件序列以down事件开始，中间含有数量不定的move事件，最终以up事件结束
+		
+		2. 默认情况：不拦截、不消费<br>
+			如果ViewGroup的onInterceptTouchEvent方法对DOWN事件返回了false，后续的事件（MOVE、UP）依然会传递给它的onInterceptTouchEvent()
+		
+		3. 处理事件：消费该事件
+			1. DOWN事件被传递给C的onTouchEvent方法，该方法返回true，表示处理这个事件
+			2. 因为C正在处理这个事件，那么DOWN事件将不再往上传递给B和A的onTouchEvent()；
+			3. 该事件列的其他事件（Move、Up）也将传递给C的onTouchEvent()
+		
+		4. 拦截DOWN事件<br>
+			假设ViewGroup希望处理这个点击事件，即覆写了onInterceptTouchEvent()返回true、onTouchEvent()返回true。事件传递情况：
+			1. DOWN事件被传递给B的onInterceptTouchEvent()方法，该方法返回true，表示拦截这个事件，即自己处理这个事件（不再往下传递）
+			2. 调用onTouchEvent()处理事件（DOWN事件将不再往上传递给A的onTouchEvent()）
+			3. 该事件列的其他事件（Move、Up）将直接传递给B的onTouchEvent()
+			4. 该事件列的其他事件（Move、Up）将不会再传递给B的onInterceptTouchEvent方法，该方法一旦返回一次true，就再也不会被调用了。
+		
+		5. 不拦截DOWN，但拦截其他后续事件<br>
+			假设ViewGroup B没有拦截DOWN事件（还是子View C来处理DOWN事件），但ViewGroup B拦截了接下来的MOVE事件
+			1. DOWN事件传递到C的onTouchEvent方法，返回了true。
+			2. **在后续到来的MOVE事件，B的onInterceptTouchEvent方法返回true拦截该MOVE事件，但该事件并没有传递给B；这个MOVE事件将会被系统变成一个CANCEL事件传递给C的onTouchEvent方法**
+			3. 直到后续又来了一个MOVE事件，该MOVE事件才会直接传递给B的onTouchEvent()，并且后续事件将直接传递给B的onTouchEvent()处理
+			4. 后续事件将不会再传递给B的onInterceptTouchEvent方法，该方法一旦返回一次true，就再也不会被调用了
+			5. C再也不会收到该事件列产生的后续事件。
+		
+	6. 其他注意点
+		1. dispatchTouchEvent无论返回true还是false，事件都不再进行分发，只有当其返回super.dispatchTouchEvent(ev)，才表明其具有向下层分发的愿望
 
-2. View的绘制流程
+	7. 参考
+		1. https://www.jianshu.com/p/e99b5e8bd67b 
+		2. https://github.com/LRH1993/android_interview/blob/master/android/basis/Event-Dispatch.md
 
-3. View的事件分发流程
+3. View的绘制流程
 
 4. View、Activity 和 Window的关系
 
