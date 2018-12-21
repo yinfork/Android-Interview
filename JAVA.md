@@ -188,7 +188,7 @@ Hashtable容器在竞争激烈的并发环境下表现出效率低下的原因�
 	和虚拟机栈所发挥的作用非常相似，区别是： 虚拟机栈为虚拟机执行Java方法 （也就是字节码）服务，而本地方法栈则为虚拟机使用到的Native方法服务。
 	
 	4. 堆<br>
-	Java虚拟机所管理的内存中最大的一块，Java堆是所有线程共享的一块内存区域，在虚拟机启动时创建。此内存区域的唯一目的就是存放对象实例，几乎所有的对象实例以及数组都在这里分配内存。Java堆是垃圾收集器管理的主要区域，因此也被称作GC堆（Garbage Collected Heap）.从垃圾回收的角度，由于现在收集器基本都采用分代垃圾收集算法，所以Java堆还可以细分为：新生代和老年代：在细致一点有：Eden空间、From Survivor、To Survivor空间等。进一步划分的目的是更好地回收内存，或者更快地分配内存。
+		Java虚拟机所管理的内存中最大的一块，Java堆是所有线程共享的一块内存区域，在虚拟机启动时创建。此内存区域的唯一目的就是存放对象实例，几乎所有的对象实例以及数组都在这里分配内存。Java堆是垃圾收集器管理的主要区域，因此也被称作GC堆（Garbage Collected Heap）.从垃圾回收的角度，由于现在收集器基本都采用分代垃圾收集算法，所以Java堆还可以细分为：新生代和老年代：在细致一点有：Eden空间、From Survivor、To Survivor空间等。进一步划分的目的是更好地回收内存，或者更快地分配内存。<br>
 	
 	5. 方法区<br>
 	方法区与Java堆一样，是各个线程共享的内存区域，它用于存储已被虚拟机加载的类信息、常量、静态变量、即使编译器编译后的代码等数据。
@@ -346,10 +346,14 @@ Minor Gc和Full GC 有什么不同呢？
 <br><br>
 注意：双亲委派模型是Java设计者们推荐给开发者们的一种类加载器实现方式，并不是一个强制性 的约束模型。在java的世界中大部分的类加载器都遵循这个模型，但也有例外。
 
-8. 类的加载时机和加载过程<br>
+8. Java内存模型规定相关<br>
+	Java内存模型规定，对于多个线程共享的变量，存储在主内存当中，每个线程都有自己独立的工作内存（比如CPU的寄存器），线程只能访问自己的工作内存，不可以访问其它线程的工作内存。<br>
+工作内存中保存了主内存共享变量的副本，线程要操作这些共享变量，只能通过操作工作内存中的副本来实现，操作完毕之后再同步回到主内存当中。
+
+9. 类的加载时机和加载过程<br>
 	TODO
 	
-9. 参考
+10. 参考
 	1. https://mp.weixin.qq.com/s?__biz=MzU4NDQ4MzU5OA==&mid=2247483910&idx=1&sn=246f39051a85fc312577499691fba89f&chksm=fd985467caefdd71f9a7c275952be34484b14f9e092723c19bd4ef557c324169ed084f868bdb#rd	
 	2. https://mp.weixin.qq.com/s?__biz=MzU4NDQ4MzU5OA==&mid=2247483914&idx=1&sn=9aa157d4a1570962c39783cdeec7e539&chksm=fd98546bcaefdd7d9f61cd356e5584e56b64e234c3a403ed93cb6d4dde07a505e3000fd0c427#rd
 	
@@ -431,22 +435,236 @@ Minor Gc和Full GC 有什么不同呢？
 ThreadLocal 为解决多线程程序的并发问题提供了一种新的思路。使用这个工具类可以很简洁地编写出优美的多线程程序。当使用 ThreadLocal 维护变量时，ThreadLocal 为每个使用该变量的线程提供独立的变量副本，所以每一个线程都可以独立地改变自己的副本，而不会影响其它线程所对应的副本。
 <br><br>
 每个线程中都保有一个ThreadLocalMap的成员变量，ThreadLocalMap 内部采用WeakReference数组保存，数组的key即为ThreadLocal 内部的Hash值。
-	
-8. Volatile原理<br>
-	1. Java内存模型规定所有的变量都是存在主存当中（类似于前面说的物理内存），每个线程都有自己的工作内存（类似于前面的高速缓存）。线程对变量的所有操作都必须在工作内存中进行，而不能直接对主存进行操作。并且每个线程不能访问其他线程的工作内存。<br>
-	在Java中，执行下面这个语句：<br>
-	```
-	i  = 10;
-	```
-	<br>
-	执行线程必须先在自己的工作线程中对变量i所在的缓存行进行赋值操作，然后再写入主存当中。而不是直接将数值10写入主存当中
 
-	2. Volatile保证了可见性
+8. 指令的重排序
+	1. 问题背景<br>
+		现代CPU的主频越来越高，与cache的交互次数也越来越多。当CPU的计算速度远远超过访问cache时，会产生cache wait，过多的cache wait就会造成性能瓶颈 
+	2. 解决方法<br>
+		1. 原理<br>
+			针对这种情况，多数架构（包括X86）采用了一种将cache分片的解决方案，即将一块cache划分成互不关联地多个 slots (逻辑存储单元，又名 Memory Bank 或 Cache Bank)，CPU可以自行选择在多个 idle bank 中进行存取。这种 SMP 的设计，显著提高了CPU的并行处理能力，也回避了cache访问瓶颈。
+		2. Memory Bank的划分<br>
+			一般 Memory bank 是按cache address来划分的。比如 偶数adress 0×12345000分到 bank 0, 奇数address 0×12345100分到 bank1。
+		3. 架构图<br>
+			![](https://github.com/yinfork/Android-Interview/blob/master/res/java/concurrent/java_cpu.jpg?raw=true)
+		3. 实例讲解<br>
+			一台配备双CPU的计算机，cache 按地址被分成了两块 cache banks，分别是cache bank0 和 cache bank1。
+			1. 理想的内存访问指令顺序：
+				1. CPU0往cache address 0×12345000 写入一个数字 1。因为address 0×12345000是偶数，所以值被写入 bank0.
+				2. CPU1读取 bank0 address 0×12345000 的值，即数字1。
+				3. CPU0往 cache 地址 0×12345100 ?写入一个数字 2。因为address 0×12345100是奇数，所以值被写入 bank1.
+				4. CPU1读取 bank1 address ?0×12345100 的值，即数字2。
+			2. 重排序后的内存访问指令顺序：
+				1. CPU0 准备往 bank0 address 0×12345000 写入数字 1。
+				2. CPU0检查 bank0 的可用性。发现 bank0 处于 busy 状态。
+				3. **CPU0 为了防止 cache等待，发挥最大效能，将内存访问指令重排序。即先执行后面的 bank1 address 0×12345100 数字2的写入请求。**
+				4. CPU0检查 bank1 可用性，发现bank1处于 idle 状态。
+				5. CPU0 将数字2写入 bank1 address 0×12345100。
+				6. **CPU1来读取 bank0 0×12345000，未读到 数字1，出错。**
+				7. CPU0 继续检查 bank0 的可用性，发现这次bank0 可用了，然后将数字1写入 0×12345000。
+				8. CPU1 读取 bank1 0×12345100，读到数字2，正确。
+				9. **从上述触发步骤中，可以看到第 3 步发生了指令重排序，并导致第6步读到错误的数据。**
+		
+		4. 小结<br>
+			通过对指令重排，CPU可以获得更快地响应速度，但也给编写并发程序的程序员带来了诸多挑战。<br>
+内存屏障是用来防止CPU出现指令重排序的利器之一。
+			
+	3. 重排序的类型
+		1. 编译时重排序<br>
+			编译源代码时，编译器依据对上下文的分析，对指令进行重排序，以之更适合于CPU的并行执行。
+		2. 运行时重排序<br>
+			CPU在执行过程中，动态分析依赖部件的效能，对指令做重排序优化	
 	
-	3. Volatile不保证原子性
+	4. 指令重排序的规则:as-if-serial<br>
+		as-if-serial 语义的意思指:不管怎么重排序，单线程下的执行结果不能被改变	
+		
+	5. 指令重排序带来的问题
+		1. A线程指令重排导致B线程出错
+对于在同一个线程内，这样的改变是不会对逻辑产生影响的，但是在多线程的情况下指令重排序会带来问题。看下面这个情景:<br>
+			在线程A中:
+			
+			```
+			context = loadContext();
+			inited = true;
+			```
 
-9. 原子性
-	1. 原子性的定义<b>
+			在线程B中:
+			
+			```
+			while(!inited ){ //根据线程A中对inited变量的修改决定是否使用context变量
+			   sleep(100);
+			}
+			doSomethingwithconfig(context);
+			```
+			
+			假设线程A中发生了指令重排序:
+			
+			```
+			inited = true;
+			context = loadContext();
+			```
+			
+			那么B中很可能就会拿到一个尚未初始化或尚未初始化完成的context,从而引发程序错误。
+			解决方法：对 inited 加上volatile修饰，防止指令重排序。所以以后这些 isInited, isLoad 的变量都可以考虑加上 volatile 修饰
+
+		2. 指令重排导致双重判断单例模式失效
+			
+			```
+			public class Singleton {
+			private static Singleton instance = null;
+			private Singleton() { }
+			public static Singleton getInstance() {
+				if(instance == null) {
+					synchronzied(Singleton.class) {
+					   if(instance == null) {
+					   		instance = new Singleton();  //非原子操作
+					   }
+					}
+				}
+				return instance;
+			}
+			```
+			
+			看似简单的一段赋值语句：instance= new Singleton()，但是很不幸它并不是一个原子操作，其实际上可以抽象为下面几条JVM指令
+			
+			```
+			memory =allocate();    //1：分配对象的内存空间 
+			ctorInstance(memory);  //2：初始化对象 
+			instance =memory;     //3：设置instance指向刚分配的内存地址
+			```
+			
+			上面操作2依赖于操作1，但是操作3并不依赖于操作2，所以JVM是可以针对它们进行指令的优化重排序的，经过重排序后如下：
+			
+			```
+			memory =allocate();    //1：分配对象的内存空间 
+			instance =memory;     //3：instance指向刚分配的内存地址，此时对象还未初始化
+			ctorInstance(memory);  //2：初始化对象
+			```
+
+			可以看到指令重排之后，instance指向分配好的内存放在了前面，而这段内存的初始化被排在了后面。
+			<br>
+			在线程A执行这段赋值语句，在初始化分配对象之前就已经将其赋值给instance引用，恰好另一个线程进入方法判断instance引用不为null，然后就将其返回使用，导致出错
+			<br>
+			解决方法：
+			
+			```
+			private static Singleton instance = null;
+			// 改成 volatile修饰 从而防止指令重排
+			private volatile static Singleton instance = null;
+			```
+			
+	6. 防止指令重排<br>
+		在JDK1.5之后，可以使用volatile变量禁止指令重排序。<br>
+		volatile关键字通过提供“内存屏障”的方式来防止指令被重排序，为了实现volatile的内存语义，编译器在生成字节码时，会在指令序列中插入内存屏障来禁止特定类型的处理器重排序。
+	
+9. 内存屏障(Memory Barrier)
+	1. 定义<br>
+		内存屏障是一种CPU指令，用于控制特定条件下的重排序和内存可见性问题。Java编译器也会根据内存屏障的规则禁止重排序。
+	2. 屏障类型<br>
+		以下是Java内存模型里的内存屏障，只是Java的规范，对于不同的处理器/指令集，JVM有不同的实现方式
+		1. LoadLoad屏障：对于这样的语句
+			
+			```
+			Load1; 
+			LoadLoad; 
+			Load2
+			```
+			
+			在Load2及后续读取操作要读取的数据被访问前，保证Load1要读取的数据被读取完毕。
+			
+		2. StoreStore屏障：对于这样的语句
+			
+			```
+			Store1; 
+			StoreStore;
+			Store2
+			```
+			
+			在Store2及后续写入操作执行前，保证Store1的写入操作对其它处理器可见。
+		
+		3. LoadStore屏障：对于这样的语句
+			
+			```
+			Load1; 
+			LoadStore; 
+			Store2
+			```
+			
+			在Store2及后续写入操作被刷出前，保证Load1要读取的数据被读取完毕。
+			
+		4. StoreLoad屏障：对于这样的语句
+			
+			```
+			Store1; 
+			StoreLoad; 
+			Load2
+			```
+			
+			在Load2及后续所有读取操作执行前，保证Store1的写入对所有处理器可见。它的开销是四种屏障中最大的。在大多数处理器的实现中，这个屏障是个万能屏障，兼具其它三种内存屏障的功能。
+	
+	3. 内存屏障指令并不是禁止重排序指令<br>
+		其实不存在任何一种指令能够禁止乱序执行，我们能做到的只是把这一堆指令根据"分段"，比如在指令中插入一条full barrier指令，然后所有指令被分成了两段，barrier前面的我们称之为程序段A，后面的称之为程序段B，通过barrier我们能够保证A所有指令的执行都在B之前，也就是说，程序段A和B分别都是乱序执行的。<br><br>
+		举例
+		
+		```
+		full barrier;
+		instance = new Singleton(); //C
+		full barrier;	
+		```
+		
+		在一个变量的赋值前后各加一个barrier，在外界看起来就好像是禁止了C处指令重排一样，其实C处又可以拆成一堆指令，这一堆指令在两个barrier之间其实又是乱序的
+
+	4. 内存屏障的应用
+		1. volatile禁止重排序的实现
+			1. 在每个 volatile 写操作的前面插入一个 StoreStore 屏障
+			2. 在每个 volatile 写操作的后面插入一个 StoreLoad 屏障
+			3. 在每个 volatile 读操作的后面插入一个 LoadLoad 屏障
+			4. 在每个 volatile 读操作的后面插入一个 LoadStore 屏障
+			5. 示例图<br>
+				![](https://github.com/yinfork/Android-Interview/blob/master/res/java/concurrent/volatile_read.png?raw=true)
+				<br>
+				![](https://github.com/yinfork/Android-Interview/blob/master/res/java/concurrent/volatile_write.png?raw=true)
+	
+		2. synchronized<br>
+			synchronized也是可以保证线程可见性的，我们知道信号量只能实现锁的功能，它是没有我们之前说过的内存屏障的功能的，那其实synchronized在代码块最后也是会加入一个barrier的(应该是store barrier)
+			
+		3. final<br>
+			final除了我们平时所理解的语义之外，其实还蕴含着**禁止把构造器final变量的赋值重排序到构造器外面**，实现方式就是在final变量的写之后插入一个store-store barrier
+	
+9. happen-before原则<br> 	Java内存模型规定，对于多个线程共享的变量，存储在主内存当中，每个线程都有自己独立的工作内存（比如CPU的寄存器），线程只能访问自己的工作内存，不可以访问其它线程的工作内存。<br>
+	工作内存中保存了主内存共享变量的副本，线程要操作这些共享变量，只能通过操作工作内存中的副本来实现，操作完毕之后再同步回到主内存当中。<br>
+	如何保证多个线程操作主内存的数据完整性是一个难题，Java内存模型也规定了工作内存与主内存之间交互的协议，也就是happen-before原则
+	1. 程序次序法则，在同一个线程中，书写在前面的操作happen-before后面的操作；
+	2. 监视器法则,对一个监视器的解锁一定发生在后续对同一监视器加锁之前；
+	3. Volatie变量法则：写volatile变量一定发生在后续对它的读之前；
+	4. 线程启动法则：Thread.start一定发生在线程中的动作；
+	5. 线程终结法则：线程中的任何动作一定发生在括号中的动作之前（其他线程检测到这个线程已经终止，从Thread.join调用成功返回，Thread.isAlive()返回false）;
+	6. 中断法则：一个线程调用另一个线程的interrupt一定发生在另一线程发现中断；
+	7. 终结法则：一个对象的构造函数结束一定发生在对象的finalizer之前；
+	8. 传递性：A发生在B之前，B发生在C之前，A一定发生在C之前。
+	
+	
+10. Volatile<br>
+	1. 原理<br>
+		Java内存模型规定所有的变量都是存在主存当中（类似于前面说的物理内存），每个线程都有自己的工作内存（类似于前面的高速缓存）。线程对变量的所有操作都必须在工作内存中进行，而不能直接对主存进行操作。并且每个线程不能访问其他线程的工作内存。<br>
+		在Java中，执行下面这个语句：<br>
+		```
+		i  = 10;
+		```
+		<br>
+		执行线程必须先在自己的工作线程中对变量i所在的缓存行进行赋值操作，然后再写入主存当中。而不是直接将数值10写入主存当中
+
+	2. volatile的特点
+		1. Volatile保证了可见性
+		2. Volatile不保证原子性
+		3. Volatile可以避免指令重排序
+	3. volatile和synchronized区别
+		1. volatile仅能保证内存可见性，不能保证原子性；而synchronized则可以保证变量的修改可见性和原子性
+		2. volatile不会造成线程的阻塞；synchronized可能会造成线程的阻塞。
+		3. volatile本质是在告诉jvm当前变量在寄存器（工作内存）中的值是不确定的，需要从主存中读取； synchronized则是锁定当前变量，只有当前线程可以访问该变量，其他线程被阻塞住
+
+
+11. 原子性
+	1. 原子性的定义<br>
 		即一个操作或者多个操作 要么全部执行并且执行的过程不会被任何因素打断，要么就都不执行。
 	2. 	在Java中，对基本数据类型的变量的读取和赋值操作是原子性操作，即这些操作是不可被中断的，要么执行，要么不执行。如果要实现更大范围操作的原子性，可以通过synchronized和Lock来实现。
 	3. 在32位平台下，对64位数据的读取和赋值是需要通过两个操作来完成的，不能保证其原子性。但是好像在最新的JDK中，JVM已经保证对64位数据的读取和赋值也是原子性操作了。
@@ -461,17 +679,21 @@ ThreadLocal 为解决多线程程序的并发问题提供了一种新的思路�
 		<br>
 		以上其实只有语句1是原子性操作，其他三个语句都不是原子性操作。
 	
-10. 可见性<br>	
+12. 可见性<br>	
 	可见性是指当多个线程访问同一个变量时，一个线程修改了这个变量的值，其他线程能够立即看得到修改的值。
 	<br><br>
 对于可见性，Java提供了volatile关键字来保证可见性。当一个共享变量被volatile修饰时，它会保证修改的值会立即被更新到主存，当有其他线程需要读取时，它会去内存中读取新值。而普通的共享变量不能保证可见性，因为普通共享变量被修改之后，什么时候被写入主存是不确定的，当其他线程去读取时，此时内存中可能还是原来的旧值，因此无法保证可见性。
 <br><br>
 另外，通过synchronized和Lock也能够保证可见性，synchronized和Lock能保证同一时刻只有一个线程获取锁然后执行同步代码，并且在释放锁之前会将对变量的修改刷新到主存当中。因此可以保证可见性。
 
-11. 参考
+
+13. 参考
 	1. https://github.com/hadyang/interview/blob/master/java/volatile.md
 	2. https://github.com/hadyang/interview/blob/master/java/threadlocal.md
 	3. https://github.com/hadyang/interview/blob/master/java/synchronized.md
 	4. https://github.com/Snailclimb/JavaGuide/blob/master/Java%E7%9B%B8%E5%85%B3/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%B3%BB%E5%88%97.md 
+	5. http://ifeve.com/jvm-memory-reordering/
+	6. http://www.importnew.com/23535.html
+	7. https://www.jianshu.com/p/ec7200a26d8b
 
 
