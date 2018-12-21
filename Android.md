@@ -382,8 +382,79 @@ TODO
 		2. https://github.com/LRH1993/android_interview/blob/master/android/basis/Event-Dispatch.md
 		3. https://github.com/Mr-YangCheng/ForAndroidInterview/blob/master/android/Android%20View%E4%BA%8B%E4%BB%B6%E5%88%86%E5%8F%91%E6%9C%BA%E5%88%B6%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90.md
 
-3. View的绘制流程
+3. View的绘制流程<br>
+	1. 整体流程
+		1. 综述<br>
+			整个View树的绘图流程是在ViewRootImpl类的performTraversals()方法开始的，该函数做的执行过程主要是根据之前设置的状态，判断是否重新计算视图大小(measure)、是否重新放置视图的位置(layout)、以及是否重绘 (draw)。
+		2. 流程图<br>
+			![](https://github.com/yinfork/Android-Interview/blob/master/res/android/view/view_draw.jpg?raw=true)
+	
+	2. Measure流程<br>
+		测量每个控件的大小。
+		1. 流程<br>
+			1. 调用measure()方法，进行一些逻辑处理；
+			2. 然后在measure()里面调用onMeasure()方法；
+			3. 假如是ViewGroup，还会在onMeasure()里面测量它里面的子View，最后一般根据测量的子View的大小确定自己的测量大小
+			4. 最终在onMeasure()里面调用**setMeasuredDimension()**设定View的宽高信息，完成View的测量操作。
+			5. 代码：
+			
+				```
+				public final void measure(int widthMeasureSpec, int heightMeasureSpec) {
+				
+				}
+				
+				protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+					setMeasuredDimension(getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec),getDefaultSize(getSuggestedMinimumHeight(), heightMeasureSpec));
+			    }
+				```
+			
+		2. MeasureSpec
+			1. MeasureSpec的组成<br>
+				MeasureSpec(32位的int值)由两部分组成：测量模式(高2位，31、32位) 和 测量的尺寸大小(底30位)。 
+			2. 测量模式
+				1. UNSPECIFIED ：不对View进行任何限制，要多大给多大，一般用于系统内部
+				2. EXACTLY：对应LayoutParams中的match_parent和具体数值这两种模式。检测到View所需要的精确大小，这时候View的最终大小就是SpecSize所指定的值，
+				3. AT_MOST ：对应LayoutParams中的wrap_content。View的大小不能大于父容器的大小。 	
 
+			3. 确定MeasureSpec的数值
+				1. 对于DecorView，其确定是通过屏幕的大小，和自身的布局参数LayoutParams。<br>
+					根据LayoutParams的布局格式（match_parent，wrap_content或指定大小），将自身大小，和屏幕大小相比，设置一个不超过屏幕大小的宽高，以及对应模式。
+
+				2. 对于其他View（包括ViewGroup），其确定是通过父布局的MeasureSpec和自身的布局参数LayoutParams。	
+					![](https://github.com/yinfork/Android-Interview/blob/master/res/android/view/view_measurespec.png?raw=true)
+			
+	3. Layout流程<br>
+		确定View的位置。
+		1. 流程
+			1. ViewGroup先在layout()中通过 **setFrame() 或者 setOpticalFrame()** 先确定自己的布局。
+			2. 然后在layout()里面调用onLayout()方法
+			3. 假如是ViewGroup，会在onLayout()中再调用子View的layout()方法，让子View布局。假如是View，则在onLayout()不会做什么
+			4. layout流程和measure流程的区别<br>
+				layout()中确定自己的布局，然后在onLayout()方法中再调用子View的layout()方法，让子View布局。而在Measure过程中，ViewGroup一般是先测量子View的大小，然后再确定自身的大小。
+
+		2. 注意点
+			1. layout()的入参是left、top、right、bottom，都是相对于父View而言
+			2. getWidth() 和 getMeasuredWidth() 的区别
+				1. getWidth() 里面的 width = right - left，表示这个view最终显示的大小。
+					需要在onLayout()流程里面才能有有效的返回值。因为layout流程是先确定自己的值，然后再调用onLayout()
+				2. getMeasuredWidth() 的返回值是 mMeasuredWidth 里面的低24位（注意不是和MeasureSpec一样，MeasureSpec的值是低30位）:mMeasuredWidth & MEASURED_SIZE_MASK，表示view原始的大小，也就是这个view在XML文件中配置或者是代码中设置的大小。<br>
+					要在onMeasure流程结束才有值，因为onMeasure()里面调用setMeasuredDimension()设定View的宽高信息
+
+	4. Draw流程
+		1. 流程
+			1. 绘制背景 background.draw(canvas)
+			2. 绘制自己（onDraw）
+			3. 绘制Children(dispatchDraw)
+			4. 绘制装饰（onDrawScrollBars）
+		2. 注意点
+			1. 自定义View一般要重写onDraw()方法，在其中绘制不同的样式
+			2. View默认不会绘制任何内容，真正的绘制都需要自己在子类中实现
+			3. View的绘制是借助onDraw方法传入的Canvas类来进行的
+	
+	5. 参考
+		1. https://github.com/LRH1993/android_interview/blob/master/android/basis/custom_view.md
+		2. https://github.com/hadyang/interview/blob/master/android/draw.md 	
+			
 4. View、Activity 和 Window的关系
 
 5. 几种Layout的性能比较
