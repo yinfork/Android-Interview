@@ -4,7 +4,7 @@
 1. [Activity](#android_activity)
 2. [Service](#android_service)
 3. [View](#android_view)
-
+4. [Android系统深入](#android_system)
 
 ----
 
@@ -456,6 +456,239 @@ TODO
 		2. https://github.com/hadyang/interview/blob/master/android/draw.md 	
 			
 4. View、Activity 和 Window的关系
+	1. Activity<br>
+		Activity并不负责视图控制，它只是控制生命周期和处理事件。真正控制视图的是Window。一个Activity包含了一个Window，Window才是真正代表一个窗口。Activity就像一个控制器，统筹视图的添加与显示，以及通过其他回调方法，来与Window、以及View进行交互。
+		
+	2. Window<br>
+		Window是视图的承载器，内部持有一个 DecorView，而这个DecorView才是 view 的根布局。Window是一个抽象类，实际在Activity中持有的是其子类PhoneWindow。PhoneWindow中有个内部类DecorView，通过创建DecorView来加载Activity中设置的布局R.layout.activity_main。Window通过WindowManager将DecorView加载其中，并将DecorView交给ViewRoot，进行视图绘制以及其他交互。
+
+	3. View			
+		1. DecorView<br>
+			DecorView是FrameLayout的子类，它可以被认为是Android视图树的根节点视图。DecorView作为顶级View，一般情况下它内部包含一个竖直方向的LinearLayout，在这个LinearLayout里面有上下三个部分，上面是个ViewStub，延迟加载的视图（应该是设置ActionBar，根据Theme设置），中间的是标题栏(根据Theme设置，有的布局没有)，下面的是内容栏。 具体情况和Android版本及主体有关
+
+		2. ViewRoot<br>
+			ViewRoot其作用非常重大。所有View的绘制以及事件分发等交互都是通过它来执行或传递的。<br>
+			ViewRoot对应ViewRootImpl类，它是连接WindowManagerService和DecorView的纽带，View的三大流程（测量（measure），布局（layout），绘制（draw））均通过ViewRoot来完成。<br>
+			ViewRoot并不属于View树的一份子。从源码实现上来看，它既非View的子类，也非View的父类，但是，它实现了ViewParent接口，这让它可以作为View的名义上的父视图。RootView继承了Handler类，可以接收事件并分发，Android的所有触屏事件、按键事件、界面刷新等事件都是通过ViewRoot进行分发的。
+
+	4. 三者的关系图<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/android/view/view_activity_window.png?raw=true)
+
+	5. 简要界面显示流程
+		1. Activity#attach()<br>
+			创建PhoneWindow
+			
+			```
+			final void attach(...) {
+				..........................................................
+				mWindow = new PhoneWindow(this, window);//创建一个Window对象
+				mWindow.setWindowControllerCallback(this);
+				mWindow.setCallback(this);//设置回调，向Activity分发点击或状态改变等事件
+				mWindow.setOnWindowDismissedCallback(this);
+				.................................................................
+				mWindow.setWindowManager(
+					(WindowManager)context.getSystemService(Context.WINDOW_SERVICE),
+					mToken, mComponent.flattenToString(),
+				        (info.flags & ActivityInfo.FLAG_HARDWARE_ACCELERATED) != 0);//给Window设置WindowManager对象
+				........................................................
+			}
+			```
+			
+		2. Activity#setContentView()<br>
+			
+			```
+			// Activity
+			public void setContentView(@LayoutRes int layoutResID) {
+				getWindow().setContentView(layoutResID);
+				initWindowDecorActionBar();
+			}
+			```
+						
+			可以看出，Activity#setContentView() 最终调用到 Window#setContentView()
+			
+			```
+			// Window
+			public void setContentView(int layoutResID) {
+				if (mContentParent == null) {//mContentParent为空，创建一个DecroView
+					installDecor();
+				} else {
+				    mContentParent.removeAllViews();//mContentParent不为空，删除其中的View
+				}
+				mLayoutInflater.inflate(layoutResID, mContentParent);//为mContentParent添加子View,即Activity中设置的布局文件
+				final Callback cb = getCallback();
+				if (cb != null && !isDestroyed()) {
+				    cb.onContentChanged();//回调通知，内容改变
+				}
+			}
+			```
+			
+			mContentParent是前面布局中@android:id/content所对应的FrameLayout。假如发现mContentParent为空，则会去调用installDecor()创建DecorView
+			
+		3. 生成DecorView<br>
+			
+			```
+			private void installDecor() {
+			    if (mDecor == null) {
+			        mDecor = generateDecor(); //生成DecorView
+			        mDecor.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+			        mDecor.setIsRootNamespace(true);
+			        if (!mInvalidatePanelMenuPosted && mInvalidatePanelMenuFeatures != 0) {
+			            mDecor.postOnAnimation(mInvalidatePanelMenuRunnable);
+			        }
+			    }
+			    if (mContentParent == null) {
+			        mContentParent = generateLayout(mDecor); // 为DecorView设置布局格式，并返回mContentParent
+			        ...
+			        } 
+			    }
+			}
+			
+			```			
+			
+			创建DecorView
+			
+			```
+			protected DecorView generateDecor() {
+			    return new DecorView(getContext(), -1);
+			}
+			```
+
+			根据主题样式设置DocorView，然后再添加setContentView()传入的Layout
+			
+			```
+
+			protected ViewGroup generateLayout(DecorView decor) {
+			    // 从主题文件中获取样式信息
+			    TypedArray a = getWindowStyle();
+			
+			    ...................
+			
+			    if (a.getBoolean(R.styleable.Window_windowNoTitle, false)) {
+			        requestFeature(FEATURE_NO_TITLE);
+			    } else if (a.getBoolean(R.styleable.Window_windowActionBar, false)) {
+			        // Don't allow an action bar if there is no title.
+			        requestFeature(FEATURE_ACTION_BAR);
+			    }
+			    ................
+			    // 根据主题样式，加载窗口布局
+			    int layoutResource;
+			    int features = getLocalFeatures();
+			    // System.out.println("Features: 0x" + Integer.toHexString(features));
+			    if ((features & (1 << FEATURE_SWIPE_TO_DISMISS)) != 0) {
+			        layoutResource = R.layout.screen_swipe_dismiss;
+			    } else if(...){
+			        ...
+			    }
+			
+			    View in = mLayoutInflater.inflate(layoutResource, null);//加载layoutResource
+			
+			    //往DecorView中添加子View，即文章开头介绍DecorView时提到的布局格式，那只是一个例子，根据主题样式不同，加载不同的布局。
+			    decor.addView(in, new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)); 
+			    mContentRoot = (ViewGroup) in;
+			
+			    ViewGroup contentParent = (ViewGroup)findViewById(ID_ANDROID_CONTENT);// 这里获取的就是mContentParent
+			    ...
+			
+			    return contentParent;
+	}			
+			```
+			
+		4. 显示DecorView<br>
+			ActivityThread#handleResumeActivity()里会把DecorView显示出来
+			
+			```
+			final void handleResumeActivity(IBinder token, boolean clearHide, 
+			                                boolean isForward, boolean reallyResume) {
+			
+			    //这个时候，Activity.onResume()已经调用了，但是现在界面还是不可见的
+			    ActivityClientRecord r = performResumeActivity(token, clearHide);
+			
+			    if (r != null) {
+			        final Activity a = r.activity;
+			        if (r.window == null && !a.mFinished && willBeVisible) {
+			            r.window = r.activity.getWindow();
+			            View decor = r.window.getDecorView();
+			            //decor对用户不可见
+			            decor.setVisibility(View.INVISIBLE);
+			            ViewManager wm = a.getWindowManager();
+			            WindowManager.LayoutParams l = r.window.getAttributes();
+			            a.mDecor = decor;
+			
+			            l.type = WindowManager.LayoutParams.TYPE_BASE_APPLICATION;
+			
+			            if (a.mVisibleFromClient) {
+			                a.mWindowAdded = true;
+			                //被添加进WindowManager了，但是这个时候，还是不可见的
+			                wm.addView(decor, l);
+			            }
+			
+			            if (!r.activity.mFinished && willBeVisible
+			                    && r.activity.mDecor != null && !r.hideForNow) {
+			                //在这里，执行了重要的操作,使得DecorView可见
+			                if (r.activity.mVisibleFromClient) {
+			                    r.activity.makeVisible();
+			                }
+			            }
+			        }
+			    }
+			}
+			
+			```
+
+			当执行了Activity#makeVisible()方法之后，界面才对我们是可见的。而这个函数关键的方法是调用了WindowManagerImpl#addView()
+			
+			```
+			void makeVisible() {
+			   if (!mWindowAdded) {
+			        ViewManager wm = getWindowManager();
+			        wm.addView(mDecor, getWindow().getAttributes());//将DecorView添加到WindowManager
+			        mWindowAdded = true;
+			    }
+			    mDecor.setVisibility(View.VISIBLE);//DecorView可见
+			}
+			```
+			
+			WindowManagerGlobal#addView():其中实例化了ViewRootImpl对象，然后调用其setView()方法。其中setView()方法经过一些列折腾，最终调用了performTraversals()方法，然后依照流程层层调用measure、layout和draw，完成绘制，最终界面才显示出来。
+			
+			```
+			public void addView(View view, ViewGroup.LayoutParams params,
+			                    Display display, Window parentWindow) {
+			
+			    final WindowManager.LayoutParams wparams = (WindowManager.LayoutParams) params;
+			
+			    ......
+			
+			    synchronized (mLock) {
+			
+			        ViewRootImpl root;
+			        //实例化一个ViewRootImpl对象
+			        root = new ViewRootImpl(view.getContext(), display);
+			        view.setLayoutParams(wparams);
+			
+			        mViews.add(view);
+			        mRoots.add(root);
+			        mParams.add(wparams);
+			    }
+			
+			    ......
+			
+			    try {
+			        //将DecorView交给ViewRootImpl
+			        root.setView(view, wparams, panelParentView);
+			    } catch (RuntimeException e) {
+			
+			    }
+			}
+			```
+			
+			ViewRootImpl还有事件分发的作用，事件传递顺序：<br>
+			硬件 -> ViewRootImpl -> DecorView -> PhoneWindow -> Activity
 
 5. 几种Layout的性能比较
+
+
+<span id = "android_system"></span>
+#### Android系统深入 [(TOP)](#home)
+1. Activity的启动过程
+
 
