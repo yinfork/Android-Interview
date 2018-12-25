@@ -468,7 +468,7 @@ TODO
 
 		2. ViewRoot<br>
 			ViewRoot其作用非常重大。所有View的绘制以及事件分发等交互都是通过它来执行或传递的。<br>
-			ViewRoot对应ViewRootImpl类，它是连接WindowManagerService和DecorView的纽带，View的三大流程（测量（measure），布局（layout），绘制（draw））均通过ViewRoot来完成。<br>
+			ViewRoot对应ViewRootImpl类，它是连接WindowManagerService和DecorView的纽带，用于让DecorView通过WindowManager向WindowManagerService进行进程间通信。View的三大流程（测量（measure），布局（layout），绘制（draw））均通过ViewRoot来完成。<br>
 			ViewRoot并不属于View树的一份子。从源码实现上来看，它既非View的子类，也非View的父类，但是，它实现了ViewParent接口，这让它可以作为View的名义上的父视图。RootView继承了Handler类，可以接收事件并分发，Android的所有触屏事件、按键事件、界面刷新等事件都是通过ViewRoot进行分发的。
 
 	4. 三者的关系图<br>
@@ -684,6 +684,16 @@ TODO
 			
 			ViewRootImpl还有事件分发的作用，事件传递顺序：<br>
 			硬件 -> ViewRootImpl -> DecorView -> PhoneWindow -> Activity
+
+	5. 小结
+		1. Activity就像个控制器，不负责视图部分。Window像个承载器，装着内部视图。DecorView就是个顶层视图，是所有View的最外层布局。ViewRoot像个连接器，负责沟通，通过硬件的感知来通知视图，进行用户之间的交互。
+		2. 本质上讲，我们要显示一个窗口出来，的确可以不需要Activity。悬浮窗口中不就是没有使用Activity来显示一个悬浮窗。<br>
+			Android中的应用中，里面对各个窗口的管理相当复杂（任务栈、状态等等），Android系统当然可以不用Activity，让用户自己直接操作Window来开发自己的应用。但是如果让用户自己去管理这些Window，开发量会很大。<br>
+			为了让大家能简单、快速的开发应用，Android通过定义Activity，让Activity帮我们管理好，我们只需简单的去重写几个回调函数，无需直接与Window对象接触。
+	
+	6. 参考
+		1. https://github.com/LRH1993/android_interview/blob/master/android/basis/decorview.md
+		2. https://github.com/hadyang/interview/blob/master/android/activity-view-window.md
 
 5. 几种Layout的性能比较
 
