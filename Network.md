@@ -45,7 +45,7 @@
 		3. 不归零码<br>
 			信号电平由0、1表示，并且在表示完一个码元后，电压不需回到0	。常见有CMI码
 			
-		4. 例子
+		4. 例子<br>
 			![](https://github.com/yinfork/Android-Interview/blob/master/res/network/manchester_encoding.jpg?raw=true)		
 			
 	2. 宽带信号<br>
