@@ -122,7 +122,8 @@
 	2. 封装成帧<br>
 		在网络层传输的包（packet，又称分组），放在数据链路层中传输的是“帧”(frame)。数据包到达数据链路层后加上数据链路层的协议头和协议尾就构成了一个数据帧。在每个帧的前部加上一个帧头部，在帧的结尾处加上一个帧尾部，把网络层的数据包作为帧的数据部分，就构成了一个完整帧。帧头和帧尾就是作为帧的起始和结束标志，也就是帧边界
 		<br>
-		![](https://github.com/yinfork/Android-Interview/blob/master/res/network/data_link_frame.png?raw=true)
+		<img src="https://github.com/yinfork/Android-Interview/blob/master/res/network/data_link_frame.png?raw=true" width = "100px" height = "100px" />
+		
 		<br><br>
 		**帧边界**<br>
 		帧的数据部分的上限 <= MTU（最大传输单元）<br>
