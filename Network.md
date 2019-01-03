@@ -182,7 +182,7 @@
 #### 网络层 [(TOP)](#home)
 1. 概述
 	1. 作用<br>
-		计算机网络中进行通信的两个计算机之间可能会经过很多个数据链路，也可能还要经过很多通信子网。网络层的任务就是选择合适的网间路由和交换结点，确保数据及时传送。
+		**计算机网络中进行通信的两个计算机之间可能会经过很多个数据链路，也可能还要经过很多通信子网。网络层的任务就是选择合适的网间路由和交换结点，确保数据及时传送。**
 	
 	2. 数据单位<br>
 		分组和包。在 TCP/IP 体系结构中，由于网络层使用 IP 协议，因此分组也叫 IP 数据报 ，简称 数据报。
@@ -328,7 +328,7 @@
 		1. 网关在网络层以上实现网络互连
 		2. 与网桥只是简单地传达信息不同，网关对收到的信息要重新打包，以适应目的系统的需求 
 		3. **TODO:RIP协议、端口映射**
-		4. TODO：了解网关和默认网关
+		4. TODO：了解网关和默认网关、网段
 		
 	3. 默认网关<br>
 		默认网关事实上不是一个产品而是一个网络层的概念，PC本身不具备路由寻址能力，所以PC要把所有的IP包发送到一个默认的中转地址上面进行转发，也就是默认网关。<br>
@@ -340,7 +340,10 @@
 		1. 可以决定数据包从来源端到目的端所经过的路由路径（host到host之间的传输路径），这个过程称为路由；
 		2. 将路由器输入端的数据包移送至适当的路由器输出端(在路由器内部进行)，这称为转送	
 	5. 区别<br>
-		**TODO**
+		**TODO**<br>
+		简单介绍:<br>
+		要使网络A和网络B能够通信，只使用网关将这两个网络连接即可，因为只有两个网络，不需要决定网络间最短路径。
+		如果需要连接多个网络，为了保证网络的可靠性，网络结构需要设计为全网状或部分网状，这样，为了网络间的通信，需要网关和路由器两种设备。
 
 7. 路由转发基本流程<br>
 	![](https://github.com/yinfork/Android-Interview/blob/master/res/network/ip_route_demo.png?raw=true)<br>
@@ -465,14 +468,21 @@
 13. IP数据报<br>
 	![](https://github.com/yinfork/Android-Interview/blob/master/res/network/network_ip_data.png?raw=true)
 
+14. 其他常用协议和工具
+	TODO:路由选择协议、OSPF（开放式最短路径优先）、BGP（边界网关协议）、DHCP（动态主机设置协议）、NAT（地址转换协议）<br>
+	参考：https://github.com/hadyang/interview/blob/master/basic/net/base_protocol.md
+	<br><br>
+	工具：<br>
+	Traceroute是用来侦测主机到目的主机之间所经路由情况的重要工具，也是最便利的工具
 
-
-14. 参考
+15. 参考
 	1. https://www.jianshu.com/p/155d4bfcdac1
 	2. https://www.jianshu.com/p/1165bfc708c0
 	3. https://www.jianshu.com/p/8c8c1d1f2344
 	4. https://zhuanlan.zhihu.com/p/37820182
 	5. https://zhuanlan.zhihu.com/p/26098552
+	6. https://github.com/Snailclimb/JavaGuide/blob/master/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C%E4%B8%8E%E6%95%B0%E6%8D%AE%E9%80%9A%E4%BF%A1/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.md#%E5%85%AB-http%E9%95%BF%E8%BF%9E%E6%8E%A5%E3%80%81%E7%9F%AD%E8%BF%9E%E6%8E%A5
+	7. https://github.com/hadyang/interview/blob/master/basic/net/base_protocol.md
 
 
 		
