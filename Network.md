@@ -7,6 +7,7 @@
 4. [网络层](#network_network_layer)
 5. [运输层](#network_transport_layer)
 6. [应用层](#network_application_layer)
+6. [总结](#network_summary)
 
 ----
 
@@ -1060,9 +1061,59 @@ Connection: Keep-Alive
 	3. 中间人攻击<br>
 		TODO
 
+8. DNS<br>
+	1. 介绍<br>
+		DNS（Domain Name System，域名系统），因特网上作为域名和IP地址相互映射的一个分布式数据库，DNS就像是一个自动的电话号码簿，能够使用户更方便的访问互联网，而不用去记住能够被机器直接读取的IP数串。通过主机名，最终得到该主机名对应的IP地址的过程叫做域名解析（或主机名解析）。
+	
+	2. 特点<br>
+		DNS协议运行在UDP协议之上，使用端口号53。
+	
+	3. 有四种类型的 DNS 服务器
+		1. 根 DNS 服务器<br>
+			根 DNS 服务器存储了所有顶级域 DNS 服务器的 IP 地址，也就是说你可以通过根服务器找到顶级域服务器。例如：「www.baidu.com」，根服务器会返回所有维护 com 这个顶级域服务器的 IP 地址。
+			
+		2. 顶级域 DNS 服务器<br>
+			顶级域 DNS 服务器主要负责诸如 com、org、net、edu、gov 等顶级域名。<br>
+			任意选择其中一个顶级域服务器，请求该顶级域服务器，该顶级域服务器拿到域名后应当能够做出判断并给出负责当前域的权威服务器地址，以百度为例的话，顶级域服务器将返回所有负责 baidu 这个域的权威服务器地址
+		
+		3. 权威 DNS 服务器<br>
+			任意选择其中一个权威服务器地址，向它继续查询 「www.baidu.com」 的具体 IP 地址，最终权威服务器会返回给你具体的 IP 地址。
+		
+		4. 本地 DNS 服务器<br>
+			每次通过 DHCP 动态获取 IP 地址的时候，这一点后文会说。其实路由器不仅给你返回了 IP 地址，还会告诉你一个 DNS 服务器地址，这个就是你的本地 DNS 服务器地址，也就是说，你的所有域名解析请求只要告诉它就行了，它会帮你查并返回结果给你的。<br>
+			本地 DNS 服务器往往是具有缓存功能的，通常两天内的记录都会被缓存，所以大部分时候你是感觉不到域名解析过程的，因为往往就是从缓存里拿的，非常快。
+	
+	4. DNS请求过程<br>
+		以访问xxx.163.com为例子<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/network/dns_process.png?raw=true) <br>
+		①：主机向负责自己的本地 DNS 发送查询报文，如果本地服务器缓存中有，将直接返回结果<br>
+		②：本地DNS服务器发现缓存中没有，于是从内置在内部的根服务器列表中选一个发送查询报文<br>
+		③：根服务器解析一下后缀名，告诉本地服务器负责 .com 的所有顶级服务器列表<br>
+		④：本地DNS服务器选择一个顶级域服务器继续查询，.com 域服务器拿到域名后继续解析，返回负责 .163.com 域的所有权威服务器列表<br>
+		⑥：本地DNS服务器从返回的权威服务器之一再次发送查询报文，最终会从某一个权威服务器上得到具体的 IP 地址，并存入自身缓存<br>
+		⑧：向主机返回结果<br>
+		
+
 9. 一次HTTP请求的过程
 
 
 10. 参考
 	1. https://github.com/hadyang/interview/blob/master/basic/net/http.md
 	2. https://github.com/LRH1993/android_interview/blob/master/computer-networks/http.md
+	3. https://zh.wikipedia.org/wiki/%E5%9F%9F%E5%90%8D%E7%B3%BB%E7%BB%9F
+	4. https://juejin.im/post/5b10be81518825139e0d8160
+
+
+<span id = "network_summary"></span>
+#### 总结 [(TOP)](#home)
+1. 数据封装入帧的流程<br>
+	![](https://github.com/yinfork/Android-Interview/blob/master/res/network/network_pop_fun.png?raw=true)
+
+
+2. 数据入栈和出栈的过程<br>
+	TCP/IP协议通信的过程其实就对应着数据入栈与出栈的过程。入栈的过程，数据发送方每层不断地封装首部与尾部，添加一些传输的信息，确保能传输到目的地。出栈的过程，数据接收方每层不断地拆除首部与尾部，得到最终传输的数据。<br>
+![](https://github.com/yinfork/Android-Interview/blob/master/res/network/network_data_fun.png?raw=true)
+
+3. 参考
+	1. https://github.com/LRH1993/android_interview/blob/master/computer-networks/tcpip.md
+
