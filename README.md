@@ -66,5 +66,5 @@
 	1. https://github.com/LRH1993/android_interview
 	2. https://github.com/Mr-YangCheng/ForAndroidInterview/
 	3. http://www.jackywang.tech/AndroidInterview-Q-A/interview/
-	4. https://github.com/MindorksOpenSource/android-interview-questionstree/
+	4. https://github.com/MindorksOpenSource/android-interview-questions
 	5. https://github.com/hadyang/interview
