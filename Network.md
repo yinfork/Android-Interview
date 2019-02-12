@@ -824,7 +824,210 @@ TCP的主要功能是在互联网中为提供可靠的、面向连接的进程�
 	1. Http
 	2. DNS 
 
-3. Http协议详解
+3. HTTP协议详解
+	1. HTTP协议特点
+		1. HTTP构建于TCP/IP协议之上，默认端口号是80。
+		2. HTTP是无连接<br>
+			无连接的含义是 限制每次连接只处理一个请求。服务器处理完客户的请求，并收到客户的应答后，即断开连接
+		3. HTTP是无状态<br>
+			无状态是指 协议对于事务处理没有记忆能力，服务器不知道客户端是什么状态。即我们给服务器发送 HTTP 请求之后，服务器根据请求，会给我们发送数据过来，但是，发送完，不会记录任何信息。
+		
+		4. 无连接无状态的优点和缺点
+			1. 优点<br>
+				优点在于解放了服务器，每一次请求“点到为止”不会造成不必要连接占用
+			2. 缺点<br>
+				为了解决HTTP无状态的缺点，两种用于保持 HTTP 连接状态的技术就应运而生了，一个是 Cookie，而另一个则是 Session。Cookie在客户端记录状态，比如登录状态。Session在服务器记录状态。<br>
+				所以缺点在于每次请求会传输大量重复的内容信息。
+	
+	2. HTTP请求报文<br>
+		一个HTTP请求报文由请求行（request line）、请求头部（header）、空行和请求数据4个部分组成<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/network/http_request_detail.png?raw=true)
+	
+		1. 请求行<br>
+			请求行分为三个部分：请求方法、请求地址和协议版本
+			1. 请求方法<br>
+				HTTP/1.1 定义的请求方法有8种：GET、POST、PUT、DELETE、PATCH、HEAD、OPTIONS、TRACE。<br>
+				最常的两种GET和POST，如果是RESTful接口的话一般会用到GET、POST、DELETE、PUT。
+				1. GET<br>
+					请求指定的页面信息，并返回实体主体。<br>
+					**GET可提交的数据量受到URL长度的限制，HTTP协议规范没有对URL长度进行限制。网上常说的2kb限制，这个限制是特定的浏览器及服务器对它的限制**
+				2. POST<br>
+					向指定资源提交数据进行处理请求（例如提交表单或者上传文件）。数据被包含在请求体中。POST请求可能会导致新的资源的建立和/或已有资源的修改。<br>
+					理论上讲，POST是没有大小限制的，HTTP协议规范也没有进行大小限制，出于安全考虑，服务器软件在实现时会做一定限制
+				3. PUT<br>
+					从客户端向服务器传送的数据取代指定的文档的内容。
+				4. DELETE<br>
+					请求服务器删除指定的页面。
+				
+			2. 请求地址<br>
+				URL：统一资源定位符，是一种自愿位置的抽象唯一识别方法。<br>
+				组成：<协议>：//<主机>：<端口>/<路径><br>
+				端口和路径有时可以省略（HTTP默认端口号是80）<br>
+				如下例：<br>
+				![](https://github.com/yinfork/Android-Interview/blob/master/res/network/http_url.png?raw=true) <br>		
+				有时会带参数，比如上图的GET请求
+				
+			3. 协议版本<br>
+				协议版本的格式为：HTTP/主版本号.次版本号，常用的有HTTP/1.0和HTTP/1.1
+			
+		2. 请求头<br>
+			请求头部为请求报文添加了一些附加信息，由“名/值”对组成，每行一对，名和值之间使用冒号分隔。<br>
+			**请求头部的最后会有一个空行，表示请求头部结束，接下来为请求数据，这一行非常重要，必不可少。**<br>
+			常见的请求头:<br>
+			1. User-Agent：产生请求的浏览器类型。
+			2. Accept：客户端可识别的响应内容类型列表;
+			3. Accept-Language：客户端可接受的自然语言;
+			4. Accept-Encoding：客户端可接受的编码压缩格式;
+			5. Accept-Charset：可接受的应答的字符集;
+			6. Host：请求的主机名，允许多个域名同处一个IP 地址，即虚拟主机;
+			7. Connection：连接方式(close 或 keep-alive);
+			8. Cookie：存储于客户端扩展字段，向同一域名的服务端发送属于该域的cookie;
+			9. Referer：包含一个URL，用户从该URL代表的页面出发访问当前请求的页面。
+			10. If-Modified-Since：文档的最后改动时间
+	
+		3. 请求数据<br>
+			可选部分，比如GET请求就没有请求数据。
+	
+		4. 一个POST方式的请求例子
+			
+			```
+			POST 　/index.php　HTTP/1.1 　　 请求行
+			Host: localhost
+			User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20100101 Firefox/10.0.2　　请求头
+			Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8
+			Accept-Language: zh-cn,zh;q=0.5
+			Accept-Encoding: gzip, deflate
+			Connection: keep-alive
+			Referer:http://localhost/
+			Content-Length：25
+			Content-Type：application/x-www-form-urlencoded
+			　　空行
+			username=aa&password=1234　　请求数据
+			```
+	
+	3. HTTP响应报文<br>
+		HTTP响应报文主要由状态行、响应头部、空行以及响应数据组成。
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/network/http_response_detail.png?raw=true)
+	
+		1. 状态行<br>
+			由3部分组成，分别为：协议版本，状态码，状态码描述。
+			其中协议版本与请求报文一致，状态码描述是对状态码的简单描述<br>
+			HTTP的状态码含义<br>
+			1. 1**	信息，服务器收到请求，需要请求者继续执行操作
+			2. 2**	成功，操作被成功接收并处理
+			3. 3**	重定向，需要进一步的操作以完成请求
+				1. 301 Moved Permanently。请求的资源已被永久的移动到新URI，返回信息会包括新的URI，浏览器会自动定向到新URI。今后任何新的请求都应使用新的URI代替
+				2. 302 Moved Temporarily。与301类似。但资源只是临时被移动。客户端应继续使用原有URI
+				3. 304 Not Modified。所请求的资源未修改，服务器返回此状态码时，不会返回任何资源。客户端通常会缓存访问过的资源，通过提供一个头信息指出客户端希望只返回在指定日期之后修改的资源。
+			4. 4**	客户端错误，请求包含语法错误或无法完成请求
+				1. 400 Bad Request 由于客户端请求有语法错误，不能被服务器所理解。
+				2. 401 Unauthorized 请求未经授权。这个状态代码必须和WWW-Authenticate报头域一起使用
+				3. 403 Forbidden 服务器收到请求，但是拒绝提供服务。服务器通常会在响应正文中给出不提供服务的原因
+				4. 404 Not Found 请求的资源不存在，例如，输入了错误的URL
+			5. 5**	服务器错误，服务器在处理请求的过程中发生了错误
+				1. 500 Internal Server Error 服务器发生不可预期的错误，导致无法完成客户端的请求。
+				2. 503 Service Unavailable 服务器当前不能够处理客户端的请求，在一段时间之后，服务器可能会恢复正常。
+	
+		2. 响应头部<br>
+			与请求头部类似，为响应报文添加了一些附加信息
+			1. Allow	服务器支持哪些请求方法（如GET、POST等）。
+			2. Content-Encoding	文档的编码（Encode）方法。
+			3. Content-Length	表示内容长度。只有当浏览器使用持久HTTP连接时才需要这个数据。
+			4. Content-Type	表示后面的文档属于什么MIME类型。
+			5. Date	当前的GMT时间。你可以用setDateHeader来设置这个头以避免转换时间格式的麻烦。
+			6. Expires	应该在什么时候认为文档已经过期，从而不再缓存它。
+			7. Last-Modified	文档的最后改动时间。
+			8. Refresh	表示浏览器应该在多少时间之后刷新文档，以秒计。
+			9. Server	服务器名字。
+			10. Set-Cookie	设置和页面关联的Cookie。
+			11. ETag：被请求变量的实体值。ETag是一个可以与Web资源关联的记号（MD5值）。
+			12. Cache-Control：这个字段用于指定所有缓存机制在整个请求/响应链中必须服从的指令。
+		
+		3. 响应数据<br>
+			用于存放需要返回给客户端的数据信息。
+			
+		4. 一个响应报文的实例
+			
+			```
+			HTTP/1.1 200 OK　　状态行
+			Date: Sun, 17 Mar 2013 08:12:54 GMT　　响应头部
+			Server: Apache/2.2.8 (Win32) PHP/5.2.5
+			X-Powered-By: PHP/5.2.5
+			Set-Cookie: PHPSESSID=c0huq7pdkmm5gg6osoe3mgjmm3; path=/
+			Expires: Thu, 19 Nov 1981 08:52:00 GMT
+			Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0
+			Pragma: no-cache
+			Content-Length: 4393
+			Keep-Alive: timeout=5, max=100
+			Connection: Keep-Alive
+			Content-Type: text/html; charset=utf-8
+			　　空行
+			
+			<html>　　响应数据
+			<head>
+			<title>HTTP响应示例<title>
+			</head>
+			<body>
+			Hello HTTP!
+			</body>
+			</html>
+			```
+
+	4. 浏览器缓存<br>
+		HTTP 协议为了减少不必要的带宽浪费，提出的一种方案。利用响应头Last-Modified与请求头If-Modified-Since都是用来记录页面的最后修改时间，从而做浏览器缓存。<br>
+		当客户端访问页面时，服务器会将页面最后修改时间通过 Last-Modified 标识由服务器发往客户端，客户端记录修改时间，再次请求本地存在的cache页面时，客户端会通过 If-Modified-Since 头将先前服务器端发过来的最后修改时间戳发送回去，服务器端通过这个时间戳判断客户端的页面是否是最新的，如果不是最新的，则返回新的内容，如果是最新的，则返回 304。
+
+	5. Cookies 与 Session <br>
+		TODO
+		
+	6. 跨站攻击
+		1. 定义<br>
+			CSRF（Cross-site request forgery，跨站请求伪造）伪造请求，冒充用户在站内的正常操作，比如爬虫。
+		2. 防范的方法
+			1. 关键操作只接受POST请求
+			2. 验证码
+			3. 检测 Referer
+			4. Token
+				1. Token 要足够随机——只有这样才算不可预测
+				2. Token 是一次性的，即每次请求成功后要更新Token——这样可以增加攻击难度，增加预测难度
+				3. Token 要注意保密性——敏感操作使用 post，防止 Token 出现在 URL 中
+		
+
+	7. HTTP的持久连接
+		1. 是否持久连接请求：
+			1. 当使用普通模式，即非 Keep-Alive 模式时，每个请求/应答客户和服务器都要新建一个连接，完成之后立即断开连接（HTTP协议为无连接的协议）；
+			2. 当使用 Keep-Alive 模式（又称持久连接、连接重用）时，Keep-Alive 功能使客户端到服务器端的连接持续有效，当出现对服务器的后继请求时，Keep-Alive 功能避免了建立或者重新建立连接。
+		2. Http不同版本下请求
+			1. HTTP 1.0<br>
+				http 1.0中默认是关闭的，需要在http头加入"Connection: Keep-Alive"，才能启用Keep-Alive；然后当服务器收到请求，作出回应的时候，它也添加一个头在响应中：
+Connection: Keep-Alive
+			2. HTTP 1.1<br>
+				http 1.1中默认启用Keep-Alive，如果加入"Connection: close "，才关闭。
+		
+		3. 细节
+			1. HTTP Keep-Alive 简单说就是保持当前的TCP连接，避免了重新建立连接。
+			2. HTTP 长连接不可能一直保持，例如 Keep-Alive: timeout=5, max=100，表示这个TCP通道可以保持5秒，max=100，表示这个长连接最多接收100次请求就断开。
+			3. HTTP是一个无状态协议，这意味着每个请求都是独立的，Keep-Alive没能改变这个结果。另外，Keep-Alive也不能保证客户端和服务器之间的连接一定是活跃的，在HTTP1.1版本中也如此。唯一能保证的就是当连接被关闭时你能得到一个通知，所以不应该让程序依赖于Keep-Alive的保持连接特性，否则会有意想不到的后果。
+			4. 使用长连接之后，客户端、服务端怎么知道本次传输结束呢？两部分：1. 判断传输数据是否达到了Content-Length 指示的大小；2. 动态生成的文件没有 Content-Length ，它是分块传输（chunked），这时候就要根据 chunked 编码来判断，chunked 编码的数据在最后有一个空 chunked 块，表明本次传输数据结束。
+
+	8. HTTP的断点续传
+		1. 简介
+			要实现断点续传的功能，通常都需要客户端记录下当前的下载进度，并在需要续传的时候通知服务端本次需要下载的内容片段。<br>
+			HTTP1.1协议中定义了断点续传相关的HTTP头 Range 和 Content-Range 字段。<br>
+
+		2. 一个最简单的断点续传实现大概如下：<br>
+			1. 客户端下载一个1024K的文件，已经下载了其中512K
+			2. 网络中断，客户端请求续传，因此需要在HTTP头中申明本次需要续传的片段：Range:bytes=512000-，这个头通知服务端从文件的512K位置开始传输文件。
+			3. 服务端收到断点续传请求，从文件的512K位置开始传输，并且在HTTP头中增加：Content-Range:bytes 512000-/1024000，并且此时服务端返回的HTTP状态码应该是206，而不是200。
+
+		3. 特殊情况：终端发起续传请求时，URL对应的文件内容在服务端已经发生变化，此时续传的数据肯定是错误的。<br>
+			解决方法：显然此时我们需要有一个标识文件唯一性的方法。在RFC2616中也有相应的定义，比如 实现Last-Modified来标识文件的最后修改时间，这样即可判断出续传文件时是否已经发生过改动。同时RFC2616中还定义有一个ETag的头，可以使用ETag头来放置文件的唯一标识，比如文件的MD5值。<br>
+			客户端在发起续传请求时应该在HTTP头中申明If-Match 或者 If-Modified-Since 字段，帮助服务端判别文件变化。
 
 
+9. 一次HTTP请求的过程
 
+
+10. 参考
+	1. https://github.com/hadyang/interview/blob/master/basic/net/http.md
+	2. https://github.com/LRH1993/android_interview/blob/master/computer-networks/http.md
