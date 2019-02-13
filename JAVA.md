@@ -127,7 +127,6 @@ HashMap维护了一个Entry数组，Entry内部类有key,value，hash和next四�
 		
 9. HashSet和HashMap如何检查重复<br>
 	当你把对象加入HashSet时，HashSet会先计算对象的hashcode值来判断对象加入的位置，同时也会与其他加入的对象的hashcode值作比较，如果没有相符的hashcode，HashSet会假设对象没有重复出现。但是如果发现有相同hashcode值的对象，这时会调用equals（）方法来检查hashcode相等的对象是否真的相同。如果两者相同，HashSet就不会让加入操作成功。（摘自我的Java启蒙书《Head fist java》第二版）
-<br>
 	1. hashCode（）与equals（）的相关规定：<br>
 		1.	如果两个对象相等，则hashcode一定也是相同的
 		2. 两个对象相等,对两个equals方法返回true
