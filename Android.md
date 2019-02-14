@@ -4,8 +4,9 @@
 1. [Activity](#android_activity)
 2. [Service](#android_service)
 3. [View](#android_view)
-4. [Android系统深入](#android_system)
+4. [Android应用启动流程](#app_launch)
 5. [Binder](#android_binder)
+6. 
 
 ----
 
@@ -699,12 +700,65 @@ TODO
 5. 几种Layout的性能比较
 
 
-<span id = "android_system"></span>
-#### Android系统深入 [(TOP)](#home)
-1. Activity的启动过程
+<span id = "app_launch"></span>
+#### Android应用启动流程 [(TOP)](#home)
+1. 启动流程<br>
+	![](https://github.com/yinfork/Android-Interview/blob/master/res/android/application/app_launch.png?raw=true)<br>
+	
+	![](https://github.com/yinfork/Android-Interview/blob/master/res/android/application/app_launch_step.png?raw=true)<br>
+	
+	具体流程：
+	1. 点击桌面App图标，Launcher进程采用Binder IPC向system_server进程发起startActivity请求；
+	2. system_server进程接收到请求后，向zygote进程发送创建进程的请求；
+	3. Zygote进程fork出新的子进程，即App进程；
+	4. App进程，通过Binder IPC向sytem_server进程发起attachApplication请求；
+	5. system_server进程在收到请求后，进行一系列准备工作后，再通过binder IPC向App进程发送scheduleLaunchActivity请求；
+	6. App进程的binder线程（ApplicationThread）在收到请求后，通过handler向主线程发送LAUNCH_ACTIVITY消息；
+	7. 主线程在收到Message后，通过发射机制创建目标Activity，并回调Activity.onCreate()等方法。
+	8. 到此，App便正式启动，开始进入Activity生命周期，执行完onCreate/onStart/onResume方法，UI渲染结束后便可以看到App的主界面。
 
-2. Android系统的启动过程
 
+2. 理论基础
+	1. zygote<br>
+		1. zygote意为“受精卵“。在Android系统里面，zygote是一个进程的名字。Android是基于Linux System的，当你的手机开机的时候，Linux的内核加载完成之后就会启动一个叫“init“的进程。在Linux System里面，所有的进程都是由init进程fork出来的，我们的zygote进程也不例外。<br>
+		2. 我们都知道，每一个App其实都是:一个单独的dalvik虚拟机;一个单独的进程<br>	
+			所以当系统里面的第一个zygote进程运行之后，在这之后再开启App，就相当于开启一个新的进程。而为了实现资源共用和更快的启动速度，Android系统开启新进程的方式，是通过fork第一个zygote进程实现的。所以说，除了第一个zygote进程，其他应用所在的进程都是zygote的子进程，这下你明白为什么这个进程叫“受精卵”了吧？因为就像是一个受精卵一样，它能快速的分裂，并且产生遗传物质一样的细胞！
+	
+	
+	2. system_server
+		1. SystemServer也是一个进程，而且是由zygote进程fork出来的。这个进程是Android Framework里面两大非常重要的进程之一——另外一个进程就是上面的zygote进程。
+		2. 为什么说SystemServer非常重要呢？因为系统里面重要的服务都是在这个进程里面开启的，比如 ActivityManagerService、PackageManagerService、WindowManagerService等等。
+	
+	
+	3. ActivityManagerService
+		1. ActivityManagerService，简称AMS，服务端对象，负责系统中所有Activity的生命周期。
+		2. ActivityManagerService进行初始化的时机很明确，就是在SystemServer进程开启的时候，就会初始化ActivityManagerService。
+
+	4. Launcher<br>
+		当我们点击手机桌面上的图标的时候，App就由Launcher开始启动了。
+		1. Launcher本质上也是一个应用程序，和我们的App一样，也是继承自Activity
+		2. Launcher实现了点击、长按等回调接口，来接收用户的输入。捕捉图标点击事件，然后startActivity()发送对应的Intent请求
+		
+	5. Instrumentation<br>
+		每个Activity都持有Instrumentation对象的一个引用，但是整个进程只会存在一个Instrumentation对象。 Instrumentation这个类里面的方法大多数和Application和Activity有关，**这个类就是完成对Application和Activity初始化和生命周期的工具类。**Instrumentation这个类很重要，对Activity生命周期方法的调用根本就离不开他，他可以说是一个大管家。
+
+	6. ActivityThread<br>
+		ActivityThread，依赖于UI线程。App和AMS是通过Binder传递信息的，那么ActivityThread就是专门与AMS的外交工作的。
+
+	7. Android系统里面的服务器和客户端的概念<br>
+		在Android的框架设计中，使用的也是这一种模式。服务器端指的就是所有App共用的系统服务，比如我们这里提到的ActivityManagerService，和前面提到的PackageManagerService、WindowManagerService等等，这些基础的系统服务是被所有的App公用的，当某个App想实现某个操作的时候，要告诉这些系统服务。<br>
+		App与AMS通过Binder进行IPC通信。
+
+10. 参考
+	1. https://github.com/LRH1993/android_interview/blob/master/android/advance/app-launch.md 
+	2. https://www.jianshu.com/p/c129eea78d61
+
+
+#### Activity的启动过程
+TODO
+
+#### Android系统的启动过程
+TODO
 
 <span id = "android_binder"></span>
 #### Binder [(TOP)](#home)
