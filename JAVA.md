@@ -380,11 +380,11 @@ Minor Gc和Full GC 有什么不同呢？
 	3. 假如线程正在阻塞，调用 interrupt() 会让线程内部抛出InterruptedException，从而提早地终结被阻塞状态
 	4. 正确做法是使用 interrupted() 方法判断线程是否停止，如果是停止状态则return
 	
-	```
-	public class MyThread extends Thread {
-
-		@Override
-		public void run() {
+		```
+		public class MyThread extends Thread {
+	
+			@Override
+			public void run() {
 				while (true) {
 					if (this.isInterrupted()) {
 						System.out.println("ֹͣ停止了!");
@@ -392,16 +392,17 @@ Minor Gc和Full GC 有什么不同呢？
 					}
 					System.out.println("timer=" + System.currentTimeMillis());
 				}
+			}
+			public static void main(String[] args) throws InterruptedException {
+				MyThread t=new MyThread();
+				t.start();
+				Thread.sleep(2000);
+				t.interrupt();
+			}
 		}
-		public static void main(String[] args) throws InterruptedException {
-			MyThread t=new MyThread();
-			t.start();
-			Thread.sleep(2000);
-			t.interrupt();
-		}
-	}
-
-	```
+	
+		```
+		
 4. 线程的优先级<br>
 	1. 每个线程都具有各自的优先级，线程的优先级可以在程序中表明该线程的重要性，如果有很多线程处于就绪状态，系统会根据优先级来决定首先使哪个线程进入运行状态。但这个并不意味着低
 优先级的线程得不到运行，而只是它运行的几率比较小，如垃圾回收机制线程的优先级就比较低。所以很多垃圾得不到及时的回收处理。
@@ -683,8 +684,10 @@ ThreadLocal 为解决多线程程序的并发问题提供了一种新的思路�
 <br><br>
 另外，通过synchronized和Lock也能够保证可见性，synchronized和Lock能保证同一时刻只有一个线程获取锁然后执行同步代码，并且在释放锁之前会将对变量的修改刷新到主存当中。因此可以保证可见性。
 
+13. 各种锁的介绍<br>
+TODO
 
-13. 参考
+14. 参考
 	1. https://github.com/hadyang/interview/blob/master/java/volatile.md
 	2. https://github.com/hadyang/interview/blob/master/java/threadlocal.md
 	3. https://github.com/hadyang/interview/blob/master/java/synchronized.md
