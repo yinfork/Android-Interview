@@ -4,7 +4,7 @@
 1. [Activity](#android_activity)
 2. [Service](#android_service)
 3. [View](#android_view)
-4. [Android应用启动流程](#app_launch)
+4. [Android系统深入](#android_system)
 5. [Binder](#android_binder)
 6. 
 
@@ -700,9 +700,10 @@ TODO
 5. 几种Layout的性能比较
 
 
-<span id = "app_launch"></span>
-#### Android应用启动流程 [(TOP)](#home)
-1. 启动流程<br>
+<span id = "android_system"></span>
+#### Android系统深入 [(TOP)](#home)
+1. Android应用启动流程<br>
+	用两个图结合看APP的启动流程<br>
 	![](https://github.com/yinfork/Android-Interview/blob/master/res/android/application/app_launch.png?raw=true)<br>
 	
 	![](https://github.com/yinfork/Android-Interview/blob/master/res/android/application/app_launch_step.png?raw=true)<br>
@@ -749,6 +750,53 @@ TODO
 		在Android的框架设计中，使用的也是这一种模式。服务器端指的就是所有App共用的系统服务，比如我们这里提到的ActivityManagerService，和前面提到的PackageManagerService、WindowManagerService等等，这些基础的系统服务是被所有的App公用的，当某个App想实现某个操作的时候，要告诉这些系统服务。<br>
 		App与AMS通过Binder进行IPC通信。
 
+
+3. Android系统架构
+	1. Android官方的系统组成图<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/android/application/android-arch1.png?raw=true) <br>
+		从下往上依次分为Linux内核、系统库和Android运行时环境、框架层以及应用层这4层架构，其中每一层都包含大量的子模块或子系统。
+
+4. 系统启动流程<br>
+	简要图：<br>
+	![](https://github.com/yinfork/Android-Interview/blob/master/res/android/application/android-boot2.png?raw=true)<br>
+	启动流程架构图:<br>
+	![](https://github.com/yinfork/Android-Interview/blob/master/res/android/application/android-boot1.png?raw=true)
+	1. Loader层
+		1. Boot ROM: 当手机处于关机状态时，长按Power键开机，引导芯片开始从固化在ROM里的预设出代码开始执行，然后加载引导程序到RAM；
+		2. Boot Loader：这是启动Android系统之前的引导程序，主要是检查RAM，初始化硬件参数等功能。
+	
+	2. Kernel层<br>
+		Kernel层是指Android内核层，到这里才刚刚开始进入Android系统。
+		1. 启动Kernel的swapper进程(pid=0)：该进程又称为idle进程, 系统初始化过程Kernel由无到有开创的第一个进程, 用于初始化进程管理、内存管理，加载Display,Camera Driver，Binder Driver等相关工作；
+		2. 启动kthreadd进程（pid=2）：是Linux系统的内核进程，会创建内核工作线程kworkder，软中断线程ksoftirqd，thermal等内核守护进程。**kthreadd进程是所有内核进程的鼻祖**。
+
+	3. Native层<br>
+		这里的Native层主要包括init孵化来的用户空间的守护进程、HAL层以及开机动画等。启动**init进程(pid=1),是Linux系统的用户进程，init进程是所有用户进程的鼻祖**。	
+		1. init进程会孵化出ueventd、logd、healthd、installd、adbd、lmkd等用户守护进程；
+		2. init进程还启动servicemanager(binder服务管家)、bootanim(开机动画)等重要服务
+		3. init进程孵化出Zygote进程，Zygote进程是Android系统的第一个Java进程(即虚拟机进程)，Zygote是所有Java进程的父进程，Zygote进程本身是由init进程孵化而来的。
+
+	4. Framework层
+		1. Zygote进程，是由init进程通过解析init.rc文件后fork生成的，Zygote进程主要包含：
+			1. 加载ZygoteInit类，注册Zygote Socket服务端套接字；
+			2. 加载虚拟机；
+			3. preloadClasses；
+			4. preloadResouces。
+		2. System Server进程，是由Zygote进程fork而来，System Server是Zygote孵化的第一个进程，System Server负责启动和管理整个Java framework，包含ActivityManager，PowerManager等服务。
+		3. Media Server进程，是由init进程fork而来，负责启动和管理整个C++ framework，包含AudioFlinger，Camera Service，等服务。
+	
+	5. App层
+		1. Zygote进程孵化出的第一个App进程是Launcher，这是用户看到的桌面App；
+		2. Zygote进程还会创建Browser，Phone，Email等App进程，每个App至少运行在一个进程上。
+		3. 所有的App进程都是由Zygote进程fork生成的。
+	
+	6. Syscall && JNI
+		1. Native与Kernel之间有一层系统调用(SysCall)层
+		2. Java层与Native(C/C++)层之间的纽带JNI	
+	7. 参考
+		1. http://gityuan.com/android/#syscall--jni
+		2. http://blog.jobbole.com/67931/
+			
 10. 参考
 	1. https://github.com/LRH1993/android_interview/blob/master/android/advance/app-launch.md 
 	2. https://www.jianshu.com/p/c129eea78d61
