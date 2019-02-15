@@ -6,7 +6,8 @@
 3. [View](#android_view)
 4. [Android系统深入](#android_system)
 5. [Binder](#android_binder)
-6. 
+6. [性能优化](#performance_optimization)
+7. [Android存储](#android_storage)
 
 ----
 
@@ -802,6 +803,7 @@ TODO
 	1. https://github.com/LRH1993/android_interview/blob/master/android/advance/app-launch.md 
 	2. https://www.jianshu.com/p/c129eea78d61
 
+----
 
 <span id = "android_binder"></span>
 #### Binder [(TOP)](#home)
@@ -844,7 +846,8 @@ TODO
 
 ----
 
-####性能优化
+<span id = "performance_optimization"></span>
+#### 性能优化 [(TOP)](#home)
 1. fix内存泄漏
 2. 启动速度优化
 3. apk大小优化
@@ -854,7 +857,8 @@ TODO
 
 ----		
 
-####Android存储
+<span id = "android_storage"></span>
+#### Android存储 [(TOP)](#home)
 1. SharedPreferences
 	SharedPreferences读写是否线程安全
 
