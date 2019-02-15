@@ -699,6 +699,7 @@ TODO
 
 5. 几种Layout的性能比较
 
+----
 
 <span id = "android_system"></span>
 #### Android系统深入 [(TOP)](#home)
@@ -802,14 +803,62 @@ TODO
 	2. https://www.jianshu.com/p/c129eea78d61
 
 
-#### Activity的启动过程
-TODO
-
-#### Android系统的启动过程
-TODO
-
 <span id = "android_binder"></span>
 #### Binder [(TOP)](#home)
-TODO
+1. Android进程间通信方式
+	1. 使用 Intent<br>
+		Activity，Service，Receiver 都支持在 Intent 中传递 Bundle 数据，而 Bundle 实现了 Parcelable 接口，可以在不同的进程间进行传输。
+	
+	2. 使用 文件共享
+		
+	3. 使用 Messenger<br>
+		Messenger 是一种轻量级的 IPC 方案，它的底层实现是 AIDL ，可以在不同进程中传递 Message 对象，它一次只处理一个请求，在服务端不需要考虑线程同步的问题，服务端不存在并发执行的情形。
+	
+	4. 使用 AIDL<br>
+		Messenger 是以串行的方式处理客户端发来的消息，如果大量消息同时发送到服务端，服务端只能一个一个处理，所以大量并发请求就不适合用 Messenger ，而且 Messenger 只适合传递消息，不能跨进程调用服务端的方法。AIDL 可以解决并发和跨进程调用方法的问题，要知道 Messenger 本质上也是 AIDL ，只不过系统做了封装方便上层的调用而已。
+		1. 支持的类型
+			1. Java 的基本数据类型
+			2. List 和 Map
+				1. 元素必须是 AIDL 支持的数据类型
+				2. Server 端具体的类里则必须是 ArrayList 或者 HashMap
+			3. 其他 AIDL 生成的接口
+			4. 实现 Parcelable 的实体（TODO 要研究支不支持Serializable，因为Intent传输的时候可以传Serializable）<br>
+				Android的Parcelable的设计初衷是因为Serializable效率过慢，为了在程序内不同组件间以及不同Android程序间(AIDL)高效的传输数据而设计，这些数据仅在内存中存在，Parcelable是通过IBinder通信的消息的载体
+		
+		2. 客户端调用远程服务的方法，被调用的方法运行在服务端的 Binder 线程池中，同时客户端的线程会被挂起，如果服务端方法执行比较耗时，就会导致客户端线程长时间阻塞，导致 ANR 。<br>
+			解决方法：使用 oneway修饰从而不会阻塞，但是这样函数不管有没有返回值也不回返回结果
+		3. 客户端的 onServiceConnected 和 onServiceDisconnected 方法都在 UI 线程中。
+		
+	5. 使用 ContentProvider<br>
+		用于不同应用间数据共享，和 Messenger 底层实现同样是 Binder 和 AIDL，系统做了封装，使用简单。 系统预置了许多 ContentProvider ，如通讯录、日程表，需要跨进程访问。 使用方法：继承 ContentProvider 类实现 6 个抽象方法，这六个方法均运行在 ContentProvider 进程中，除 onCreate 运行在主线程里，其他五个方法均由外界回调运行在 Binder 线程池中。<br>
+		ContentProvider 的底层数据，可以是 SQLite 数据库，可以是文件，也可以是内存中的数据。
+	
+	6. 使用 Socket
+		1. Socket 本身可以传输任意字节流。
+		2. Socket 是连接应用层与传输层之间接口（API）。 
+
+2. Handler消息分法机制
+
+3. Android图片缓存？
+ 
+####性能优化
+1. fix内存泄漏
+2. 启动速度优化
+3. apk大小优化
+4. 耗电优化 
+5. 优化OOM问题
+	1. 高效加载图片，低端机加载565的图片，图片裁剪压缩 	
+
+####Android存储
+1. SharedPreferences
+	SharedPreferences读写是否线程安全
+
+
+
+
+
+
+
+
 
 
