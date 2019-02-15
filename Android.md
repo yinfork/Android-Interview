@@ -842,6 +842,7 @@ TODO
 10. 参考
 	1. https://github.com/LRH1993/android_interview/blob/master/android/basis/ipc.md#android-%E4%B8%AD%E7%9A%84-ipc-%E6%96%B9%E5%BC%8F
 
+----
 
 ####性能优化
 1. fix内存泄漏
@@ -849,7 +850,9 @@ TODO
 3. apk大小优化
 4. 耗电优化 
 5. 优化OOM问题
-	1. 高效加载图片，低端机加载565的图片，图片裁剪压缩 	
+	1. 高效加载图片，低端机加载565的图片，图片裁剪压缩 
+
+----		
 
 ####Android存储
 1. SharedPreferences
