@@ -5,7 +5,7 @@
 2. [Service](#android_service)
 3. [View](#android_view)
 4. [Android系统深入](#android_system)
-5. [Binder](#android_binder)
+5. [Android进程间通信](#android_ipc)
 6. [性能优化](#performance_optimization)
 7. [Android存储](#android_storage)
 
@@ -805,8 +805,8 @@ TODO
 
 ----
 
-<span id = "android_binder"></span>
-#### Binder [(TOP)](#home)
+<span id = "android_ipc"></span>
+#### Android进程间通信 [(TOP)](#home)
 1. Android进程间通信方式
 	1. 使用 Intent<br>
 		Activity，Service，Receiver 都支持在 Intent 中传递 Bundle 数据，而 Bundle 实现了 Parcelable 接口，可以在不同的进程间进行传输。
@@ -817,7 +817,7 @@ TODO
 		Messenger 是一种轻量级的 IPC 方案，它的底层实现是 AIDL ，可以在不同进程中传递 Message 对象，它一次只处理一个请求，在服务端不需要考虑线程同步的问题，服务端不存在并发执行的情形。
 	
 	4. 使用 AIDL<br>
-		Messenger 是以串行的方式处理客户端发来的消息，如果大量消息同时发送到服务端，服务端只能一个一个处理，所以大量并发请求就不适合用 Messenger ，而且 Messenger 只适合传递消息，不能跨进程调用服务端的方法。AIDL 可以解决并发和跨进程调用方法的问题，要知道 Messenger 本质上也是 AIDL ，只不过系统做了封装方便上层的调用而已。
+		AIDL (Android Interface Definition Language) 是一种接口定义语言，用于生成可以在Android设备上两个进程之间进行进程间通信(Interprocess Communication, IPC)的代码。
 		1. 支持的类型
 			1. Java 的基本数据类型
 			2. List 和 Map
@@ -830,6 +830,8 @@ TODO
 		2. 客户端调用远程服务的方法，被调用的方法运行在服务端的 Binder 线程池中，同时客户端的线程会被挂起，如果服务端方法执行比较耗时，就会导致客户端线程长时间阻塞，导致 ANR 。<br>
 			解决方法：使用 oneway修饰从而不会阻塞，但是这样函数不管有没有返回值也不回返回结果
 		3. 客户端的 onServiceConnected 和 onServiceDisconnected 方法都在 UI 线程中。
+		4. 与Messenger的区别<br>
+			Messenger 是以串行的方式处理客户端发来的消息，如果大量消息同时发送到服务端，服务端只能一个一个处理，所以大量并发请求就不适合用 Messenger ，而且 Messenger 只适合传递消息，不能跨进程调用服务端的方法。AIDL 可以解决并发和跨进程调用方法的问题，要知道 Messenger 本质上也是 AIDL ，只不过系统做了封装方便上层的调用而已。
 		
 	5. 使用 ContentProvider<br>
 		用于不同应用间数据共享，和 Messenger 底层实现同样是 Binder 和 AIDL，系统做了封装，使用简单。 系统预置了许多 ContentProvider ，如通讯录、日程表，需要跨进程访问。 使用方法：继承 ContentProvider 类实现 6 个抽象方法，这六个方法均运行在 ContentProvider 进程中，除 onCreate 运行在主线程里，其他五个方法均由外界回调运行在 Binder 线程池中。<br>
@@ -838,11 +840,62 @@ TODO
 	6. 使用 Socket
 		1. Socket 本身可以传输任意字节流。
 		2. Socket 是连接应用层与传输层之间接口（API）。 
+	
+	7. 参考
+		1. https://github.com/LRH1993/android_interview/blob/master/android/basis/ipc.md#android-%E4%B8%AD%E7%9A%84-ipc-%E6%96%B9%E5%BC%8F
 
-2. Handler消息分法机制
+2. Binder介绍
+	1. Binder框架原理图<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/android/ipc/android_binder.png?raw=true)
+	
+	2. Binder框架的四个角色
+		1. Client进程：使用服务的进程，运行在用户空间。
+		2. Server进程：提供服务的进程，运行在用户空间。
+		3. ServiceManager进程：运行在用户空间。ServiceManager的作用是将字符形式的Binder名字转化成Client中对该Binder的引用，使得Client能够通过Binder名字获得对Server中Binder实体的引用。
+		4. Binder驱动：运行在内核空间。驱动负责进程之间Binder通信的建立，Binder在进程之间的传递，Binder引用计数管理，数据包在进程之间的传递和交互等一系列底层支持。
+		5. 四者的关系<br>
+			Binder驱动程序提供设备文件/dev/binder与用户空间交互，Client、Server和Service Manager通过open和ioctl文件操作函数与Binder驱动程序进行通信。
+	
+	3. Binder通信流程
+		1. Server创建了Binder实体，为其取一个字符形式，可读易记的名字。
+		2. 将这个Binder连同名字以数据包的形式通过Binder驱动发送给ServiceManager，通知ServiceManager注册一个名字为XX的Binder，它位于Server中。
+		3. 驱动为这个穿过进程边界的Binder创建位于内核中的实体结点以及ServiceManager对实体的引用，将名字以及新建的引用打包给ServiceManager。
+		4. ServiceManager收数据包后，从中取出名字和引用填入一张查找表中。但是一个Server若向ServiceManager注册自己Binder就必须通过这个引用和ServiceManager的Binder通信。
+		5. Server向ServiceManager注册了Binder实体及其名字后，Client就可以通过名字获得该Binder的引用了。Clent也利用保留的引用向ServiceManager请求访问某个Binder：我申请名字叫XX的Binder的引用。
+		6. ServiceManager收到这个连接请求，从请求数据包里获得Binder的名字，在查找表里找到该名字对应的条目，从条目中取出Binder引用，将该引用作为回复发送给发起请求的Client。
+		7. 使用服务的具体执行过程<br>
+			![](https://github.com/yinfork/Android-Interview/blob/master/res/android/ipc/binder_step.png?raw=true)
+			1. Client通过获得一个Server的代理接口，对Server进行调用。
+			2. 代理接口中定义的方法与Server中定义的方法是一一对应的。
+			3. Client调用某个代理接口中的方法时，代理接口的方法会将Client传递的参数打包成Parcel对象。
+			4. 代理接口将Parcel发送给内核中的Binder Driver。
+			5. Server会读取Binder Driver中的请求数据，如果是发送给自己的，解包Parcel对象，处理并将结果返回。
+			6. 整个的调用过程是一个同步过程，在Server处理的时候，Client会Block住。因此Client调用过程不应在主线程。
+		8. 此外还有匿名Binder<br>
+			不是所有的Binder都需要注册给ServiceManager广而告之的。Server端可以通过已经建立的Binder连接将创建的Binder实体传给Client，当然这条已经建立的Binder连接必须是通过实名Binder实现。由于这个Binder没有向ServiceManager注册名字，所以是 匿名Binder。Client将会收到这个匿名Binder的引用，通过这个引用向位于Server中的实体发送请求。匿名Binder为通信双方建立一条私密通道，只要Server没有把匿名Binder发给别的进程，别的进程就无法通过穷举或猜测等任何方式获得该Binder的引用，向该Binder发送请求。
+	
+	4. Binder的数据拷贝<br>
+		1. Binder数据拷贝只需要一次
+			Linux内核实际上没有从一个用户空间到另一个用户空间直接拷贝的函数，需要先用 copy_from_user() 拷贝到内核空间，再用 copy_to_user() 拷贝到另一个用户空间。为了实现用户空间到用户空间的拷贝，mmap()分配的内存除了映射进了接收方进程里，还映射进了内核空间。所以调用 copy_from_user() 将数据拷贝进内核空间也相当于拷贝进了接收方的用户空间，这就是Binder只需一次拷贝的"秘密"。
+	
+		2. 对比其他进程间通信方式
+			在移动设备上（性能受限制的设备，比如要省电），广泛地使用跨进程通信对通信机制的性能有严格的要求，Binder相对于传统的Socket方式，更加高效。Binder数据拷贝只需要一次，而管道、消息队列、Socket都需要2次，共享内存方式一次内存拷贝都不需要，但实现方式又比较复杂。
+	
+		3. Linux IPC原理<br>
+			![](https://github.com/yinfork/Android-Interview/blob/master/res/android/ipc/linux_ipc.png?raw=true)<br>
+			每个Android的进程，只能运行在自己进程所拥有的虚拟地址空间。例如，对应一个4GB的虚拟地址空间，其中3GB是用户空间，1GB是内核空间。当然内核空间的大小是可以通过参数配置调整的。对于用户空间，不同进程之间是不能共享的，而内核空间却是可共享的。Client进程向Server进程通信，恰恰是利用进程间可共享的内核内存空间来完成底层通信工作的。Client端与Server端进程往往采用ioctl等方法与内核空间的驱动进行交互。
+	
+	5. Binder的优势
+		1. 性能方面：Binder相对于传统的Socket方式，更加高效。Binder数据拷贝只需要一次
+		2. 安全方面：传统的进程通信方式对于通信双方的身份并没有做出严格的验证，比如Socket通信的IP地址是客户端手动填入，很容易进行伪造。然而，Binder机制从协议本身就支持对通信双方做身份校检，从而大大提升了安全性。
+		
+	10. 参考
+		1. https://github.com/LRH1993/android_interview/blob/master/android/advance/binder.md
+		2. https://github.com/hadyang/interview/blob/master/android/binder.md 	
+	
+3. Handler消息分发机制
 
-10. 参考
-	1. https://github.com/LRH1993/android_interview/blob/master/android/basis/ipc.md#android-%E4%B8%AD%E7%9A%84-ipc-%E6%96%B9%E5%BC%8F
+	
 
 ----
 
