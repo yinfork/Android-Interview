@@ -839,8 +839,10 @@ TODO
 
 2. Handler消息分法机制
 
-3. Android图片缓存？
- 
+10. 参考
+	1. https://github.com/LRH1993/android_interview/blob/master/android/basis/ipc.md#android-%E4%B8%AD%E7%9A%84-ipc-%E6%96%B9%E5%BC%8F
+
+
 ####性能优化
 1. fix内存泄漏
 2. 启动速度优化
@@ -853,9 +855,17 @@ TODO
 1. SharedPreferences
 	SharedPreferences读写是否线程安全
 
+2. Parcelable和Serializable的作用、效率、区别及选择。
+	1. 作用
+		1. Serializable的作用是为了保存对象的属性到本地文件、数据库、网络流、rmi以方便数据传输，当然这种传输可以是程序内的也可以是两个程序间的。
+		2. Parcelable的设计初衷是因为Serializable效率过慢，为了在程序内不同组件间以及不同Android程序间(AIDL)高效的传输数据而设计，这些数据仅在内存中存在，Parcelable是通过IBinder通信的消息的载体。
+		
+	2. 效率及选择
+		1. Parcelable的性能比Serializable好，在内存开销方面较小，所以在内存间数据传输时推荐使用Parcelable，如activity间传输数据，
+		2. Serializable可将数据持久化方便保存，所以在需要保存或网络传输数据时选择Serializable，因为android不同版本Parcelable可能不同，所以不推荐使用Parcelable进行数据持久化。
 
-
-
+10. 参考
+	1. https://github.com/LRH1993/android_interview/blob/master/android/advance/serializable.md
 
 
 
