@@ -5,7 +5,7 @@
 2. [Service](#android_service)
 3. [View](#android_view)
 4. [Android系统深入](#android_system)
-5. [Android进程间通信](#android_ipc)
+5. [Android进程间通信和消息分发机制](#android_ipc)
 6. [性能优化](#performance_optimization)
 7. [Android存储](#android_storage)
 
@@ -806,7 +806,7 @@ TODO
 ----
 
 <span id = "android_ipc"></span>
-#### Android进程间通信 [(TOP)](#home)
+#### Android进程间通信和消息分发机制 [(TOP)](#home)
 1. Android进程间通信方式
 	1. 使用 Intent<br>
 		Activity，Service，Receiver 都支持在 Intent 中传递 Bundle 数据，而 Bundle 实现了 Parcelable 接口，可以在不同的进程间进行传输。
@@ -893,7 +893,7 @@ TODO
 		1. https://github.com/LRH1993/android_interview/blob/master/android/advance/binder.md
 		2. https://github.com/hadyang/interview/blob/master/android/binder.md 	
 	
-3. Handler消息分发机制
+3. Android线程间消息分发机制
 	1. 定义<br>
 		一套 Android 消息传递机制
 	2. 构成<br>
