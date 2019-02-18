@@ -243,6 +243,29 @@
 	1. 静态内部类不需要有指向外部类的引用。但非静态内部类需要持有对外部类的引用。
 	2. 非静态内部类能够访问外部类的静态和非静态成员。静态内部类不能访问外部类的非静态成员，只能访问外部类的静态成员。
 
+11. 数组复制方法
+	1. for逐一复制
+	2. System.arraycopy() -> 效率最高native方法
+	3. Arrays.copyOf() -> 本质调用arraycopy
+	4. clone方法 -> 返回Object[],需要强制类型转换
+
+12. Java移位运算符<br>
+	java中有三种移位运算符
+	1. **<<** :左移运算符,x << 1,相当于x乘以2(不溢出的情况下),低位补0<br>
+		注意：左移位数大于等于32位操作时，会先求余（%）后再进行左移操作。<br>
+		示意图：<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/java/base/left_shift.png?raw=true)
+		
+	2. **>>** :带符号右移,x >> 1,相当于x除以2,正数高位补0,负数高位补1<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/java/base/right_shift.png?raw=true)<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/java/base/right_shift_2.png?raw=true)
+		
+	3. **>>>** :无符号右移,忽略符号位,空位都以0补齐<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/java/base/no_sign_right_shift.png?raw=true)
+
+	4. 参考：https://zhuanlan.zhihu.com/p/30108890
+	
+	
 ----
 
 <span id = "java_collection"></span>
@@ -885,3 +908,5 @@ TODO
 	7. https://www.jianshu.com/p/ec7200a26d8b
 
 
+#### 面向对象的特性
+TODO
