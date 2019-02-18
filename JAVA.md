@@ -24,7 +24,8 @@
 			```
 			try{} 
 			catch(){}
-			finally{} return;
+			finally{} 
+			return;
 			```
 			<br>
 			显然程序按顺序执行。
@@ -33,7 +34,8 @@
 			```
 			try{ return; }
 			catch(){} 
-			finally{} return;
+			finally{} 
+			return;
 			```
 			1. 程序执行try块中return之前（包括return语句中的表达式运算）代码；
 			2. 再执行finally块，最后执行try中return;
@@ -43,11 +45,12 @@
 			```
 			try{ } 
 			catch(){return;} 
-			finally{} return;
-         ```
-         1. 程序先执行try，如果遇到异常执行catch块，
-         2. 有异常：则执行catch中return之前（包括return语句中的表达式运算）代码，再执行finally语句中全部代码，最后执行catch块中return. finally之后也就是4处的代码不再执行。
-         3. 无异常：执行完try再finally再return.
+			finally{} 
+			return;
+         	```
+			1. 程序先执行try，如果遇到异常执行catch块，
+			2. 有异常：则执行catch中return之前（包括return语句中的表达式运算）代码，再执行finally语句中全部代码，最后执行catch块中return. finally之后也就是4处的代码不再执行。
+			3. 无异常：执行完try再finally再return.
 		
 		4. 情况4:<br>
 			```
