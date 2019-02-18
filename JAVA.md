@@ -76,14 +76,20 @@
 			finally{return;}
 			```  
           
-          1. 程序执行catch块中return之前（包括return语句中的表达式运算）代码；
-          2. 再执行finally块，因为finally块中有return所以提前退出.
+			1. 程序执行catch块中return之前（包括return语句中的表达式运算）代码；
+			2. 再执行finally块，因为finally块中有return所以提前退出.
           
 		6. 情况6:<br>
-
-          1. 程序执行try块中return之前（包括return语句中的表达式运算）代码；
-          2. 有异常：执行catch块中return之前（包括return语句中的表达式运算）代码；则再执行finally块，因为finally块中有return所以提前退出。
-          3. 无异常：则再执行finally块，因为finally块中有return所以提前退出。
+						
+			```
+			try{ return;}
+			catch(){return;} 
+			finally{return;}
+			```
+			
+			1. 程序执行try块中return之前（包括return语句中的表达式运算）代码；
+			2. 有异常：执行catch块中return之前（包括return语句中的表达式运算）代码；则再执行finally块，因为finally块中有return所以提前退出。
+			3. 无异常：则再执行finally块，因为finally块中有return所以提前退出。
 	
 	3. 参考
 		1. https://www.cnblogs.com/fery/p/4709841.html
