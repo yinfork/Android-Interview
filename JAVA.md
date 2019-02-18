@@ -21,61 +21,72 @@
 
 	2. 例子
 		1. 情况1：<br>
+			
 			```
 			try{} 
 			catch(){}
 			finally{} 
 			return;
 			```
-			<br>
+			
 			显然程序按顺序执行。
 		
 		2. 情况2:<br>
+			
 			```
 			try{ return; }
 			catch(){} 
 			finally{} 
 			return;
 			```
+			
 			1. 程序执行try块中return之前（包括return语句中的表达式运算）代码；
 			2. 再执行finally块，最后执行try中return;
 			3. finally块之后的语句return，因为程序在try中已经return所以不再执行。
 
 		3. 情况3:<br>
+
 			```
 			try{ } 
 			catch(){return;} 
 			finally{} 
 			return;
          	```
+         	
 			1. 程序先执行try，如果遇到异常执行catch块，
 			2. 有异常：则执行catch中return之前（包括return语句中的表达式运算）代码，再执行finally语句中全部代码，最后执行catch块中return. finally之后也就是4处的代码不再执行。
 			3. 无异常：执行完try再finally再return.
-		
+	
 		4. 情况4:<br>
+			
 			```
 			try{ return; }
 			catch(){} 
 			finally{return;}
           ```
+          
           1. 程序执行try块中return之前（包括return语句中的表达式运算）代码；
           2. 再执行finally块，因为finally块中有return所以提前退出。
 
 		5. 情况5:<br>
+			
 			```
 			try{} 
 			catch(){return;}
 			finally{return;}
           ```
+          
           1. 程序执行catch块中return之前（包括return语句中的表达式运算）代码；
           2. 再执行finally块，因为finally块中有return所以提前退出。
 
 		6. 情况6:<br>
+			
 			```
 			try{ return;}
 			catch(){return;} 
 			finally{return;}
 			```
+          
           1. 程序执行try块中return之前（包括return语句中的表达式运算）代码；
           2. 有异常：执行catch块中return之前（包括return语句中的表达式运算）代码；则再执行finally块，因为finally块中有return所以提前退出。
           3. 无异常：则再执行finally块，因为finally块中有return所以提前退出。
