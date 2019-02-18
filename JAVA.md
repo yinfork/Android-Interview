@@ -56,18 +56,18 @@
 			1. 程序先执行try，如果遇到异常执行catch块，
 			2. 有异常：则执行catch中return之前（包括return语句中的表达式运算）代码，再执行finally语句中全部代码，最后执行catch块中return. finally之后也就是4处的代码不再执行。
 			3. 无异常：执行完try再finally再return.
-	
+			
 		4. 情况4:<br>
 			
 			```
 			try{ return; }
 			catch(){} 
 			finally{return;}
-			```
-          
-          1. 程序执行try块中return之前（包括return语句中的表达式运算）代码；
-          2. 再执行finally块，因为finally块中有return所以提前退出。
-
+			```  
+			
+			1. 程序执行try块中return之前（包括return语句中的表达式运算）代码；
+			2. 再执行finally块，因为finally块中有return所以提前退出。
+			
 		5. 情况5:<br>
 			
 			```
@@ -78,7 +78,7 @@
           
           1. 程序执行catch块中return之前（包括return语句中的表达式运算）代码；
           2. 再执行finally块，因为finally块中有return所以提前退出。
-
+          
 		6. 情况6:<br>
 			
 			```
