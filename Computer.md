@@ -270,3 +270,8 @@
 		2. 小结<br>
 			判断此次请求是否造成死锁，若会造成死锁，则拒绝该请求。
 
+6. 参考
+	1. https://blog.csdn.net/Roy_70/article/details/50958513
+	2. https://www.nowcoder.com/questionTerminal/09b51b00891543d6b08ace80c0704b01
+	3. https://github.com/hadyang/interview/blob/master/basic/op/concurrency.md
+
