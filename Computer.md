@@ -2,7 +2,8 @@
 <span id = "home"></span>
 #### 目录
 1. [IO操作](#computer_io)
-
+2. [进程与线程](#process_thread)
+3. [死锁](#deadlock)
 
 ----
 
@@ -173,4 +174,99 @@
 	2. https://www.jianshu.com/p/91c8600cb2ae
 	3. https://github.com/hadyang/interview/blob/master/basic/op/concurrency.md 
 
+----
+
+<span id = "deadlock"></span>
+#### 死锁 [(TOP)](#home)
+1. 定义<br>
+	死锁是指多个进程因循环等待资源而造成无法执行的现象。死锁会造成进程无法执行，同时会造成系统资源的极大浪费(资源无法释放)。
+
+2. 死锁产生的四个必要条件<br>
+	这四个条件是死锁的必要条件，只要系统发生死锁，这些条件必然成立，而只要上述条件之
+一不满足，就不会发生死锁。
+	1. 互斥使用：<br>
+		指进程对所分配到的资源进行排它性使用，即在一段时间内某资源只由一个进程占用。如果此时还有其它进程请求资源，则请求者只能等待，直至占有资源的进程用毕释放。
+	2. 不可抢占：<br>
+		指进程已获得的资源，在未使用完之前，不能被剥夺，只能在使用完时由自己释放。
+	3. 请求和保持：<br>
+		指进程已经保持至少一个资源，但又提出了新的资源请求，而该资源已被其它进程占有，此时请求进程阻塞，但又对自己已获得的其它资源保持不放。
+	4. 循环等待：<br>
+		指在发生死锁时，必然存在一个进程——资源的环形链，即进程集合{P0，P1，P2，···，Pn}中的P0正在等待一个P1占用的资源；P1正在等待P2占用的资源，……，Pn正在等待已被P0占用的资源。
+
+3. 死锁的例子
+
+	```
+	public class DeadLockDemo {
+	
+	    public static void main(String[] args) {
+	        // 线程a
+	        Thread td1 = new Thread(new Runnable() {
+	            public void run() {
+	                DeadLockDemo.method1();
+	            }
+	        });
+	        // 线程b
+	        Thread td2 = new Thread(new Runnable() {
+	            public void run() {
+	                DeadLockDemo.method2();
+	            }
+	        });
+	
+	        td1.start();
+	        td2.start();
+	    }
+	
+	    public static void method1() {
+	        synchronized (String.class) {
+	            try {
+	                Thread.sleep(2000);
+	            } catch (InterruptedException e) {
+	                e.printStackTrace();
+	            }
+	            System.out.println("线程a尝试获取integer.class");
+	            synchronized (Integer.class) {
+	
+	            }
+	
+	        }
+	    }
+	
+	    public static void method2() {
+	        synchronized (Integer.class) {
+	            try {
+	                Thread.sleep(2000);
+	            } catch (InterruptedException e) {
+	                e.printStackTrace();
+	            }
+	            System.out.println("线程b尝试获取String.class");
+	            synchronized (String.class) {
+	
+	            }
+	
+	        }
+	    }
+	
+	}
+	
+	----------------
+	线程b尝试获取String.class
+	线程a尝试获取integer.class
+	....
+	...
+	..
+	.
+	无限阻塞下去
+	
+	```
+
+4. 死锁避免<br>
+	在系统设计、进程调度等方面注意如何不让这四个必要条件成立，如何确定资源的合理分配算法，避免进程永久占据系统资源。此外，也要防止进程在处于等待状态的情况下占用资源。因此，对资源的分配要给予合理的规划。<br>
+	简单来说：在并发程序中，避免逻辑中出现多个线程互相持有对方线程所需要的独占锁的的情况，就可以避免死锁。
+
+5. 死锁避免的算法<br>
+	1. 银行家算法
+		1. 说明<br>
+			在银行中，客户申请贷款的数量是有限的，每个客户在第一次申请贷款时要声明完成该项目所需的最大资金量，在满足所有贷款要求时，客户应及时归还。银行家在客户申请的贷款数量不超过自己拥有的最大值时，都应尽量满足客户的需要。
+		2. 小结<br>
+			判断此次请求是否造成死锁，若会造成死锁，则拒绝该请求。
 
