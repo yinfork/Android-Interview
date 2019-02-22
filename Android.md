@@ -8,6 +8,7 @@
 5. [Android进程间通信和消息分发机制](#android_ipc)
 6. [性能优化](#performance_optimization)
 7. [Android存储](#android_storage)
+8. [图片加载](#android_image)
 
 ----
 
@@ -1040,14 +1041,105 @@ TODO
 		2. Parcelable的设计初衷是因为Serializable效率过慢，为了在程序内不同组件间以及不同Android程序间(AIDL)高效的传输数据而设计，这些数据仅在内存中存在，Parcelable是通过IBinder通信的消息的载体。
 		
 	2. 效率及选择
-		1. Parcelable的性能比Serializable好，在内存开销方面较小，所以在内存间数据传输时推荐使用Parcelable，如activity间传输数据，
+		1. Parcelable的性能比Serializable好，在内存开销方面较小，所以在内存间数据传输时推荐使用Parcelable，如activity间传输数据
 		2. Serializable可将数据持久化方便保存，所以在需要保存或网络传输数据时选择Serializable，因为android不同版本Parcelable可能不同，所以不推荐使用Parcelable进行数据持久化。
 
 10. 参考
 	1. https://github.com/LRH1993/android_interview/blob/master/android/advance/serializable.md
 
+----
+
+<span id = "android_image"></span>
+#### 图片加载 [(TOP)](#home)
+1. Bitmap.Config 有四种枚举类型。
+	1. ARGB_8888<br>
+		ARGB 四个通道的值都是 8 位，加起来 32 位，也就是 4 个字节。每个像素点占用 4 个字节的大小。
+	
+	2. ARGB_4444<br>
+		ARGB 四个通道的值都是 4 位，加起来 16 位，也就是 2 个字节。每个像素点占用 2 个字节的大小。
+	
+	3. RGB_565<br>
+		RGB 三个通道分别是 5 位、6 位、5 位，没有 A 通道，加起来 16 位，也就是 2 个字节。每个像素点占用 2 个字节的大小。
+	
+	4. ALPHA_8<br>
+		只有 A 通道，占 8 位，1 个字节。每个像素点占用 1 个字节的大小。
+	
+	5. 计算
+		假设图片是ARGB_8888，512*384像素。需要占用0.75M
+
+2. 高效加载大图片
+	1. 背景：防止OOM或卡顿（频繁GC） 
+	2. 加载步骤
+		1. 先测量图片的宽高<br>
+			使用BitmapFactory.Options参数，将这个参数的inJustDecodeBounds属性设置为true，就可以让解析方法禁止为bitmap分配内存，返回的BitmapFactory.Options的outWidth、outHeight和outMimeType属性都会被赋值。<br>
+			这个技巧让我们可以在加载图片之前就获取到图片的长宽值和MIME类型，从而根据情况对图片进行压缩<br>
+			假如直接用BitmapFactory.decodeXXX()加载图片，是直接加载原图，很容易OOM。
+			
+			```
+			BitmapFactory.Options options = new BitmapFactory.Options();  
+			options.inJustDecodeBounds = true;  
+			BitmapFactory.decodeResource(getResources(), R.id.myimage, options);  
+			int imageHeight = options.outHeight;  
+			int imageWidth = options.outWidth;  
+			String imageType = options.outMimeType;  
+			```
+			
+		2. 根据实际展示的View的大小，计算出合适的采样率从而实现压缩<br>			通过设置BitmapFactory.Options中inSampleSize的值就可以实现。<br>
+			比如我们有一张2048*1536像素的图片，将inSampleSize的值设置为4，就可以把这张图片压缩成512*384像素。原本加载这张图片需要占用13M的内存，压缩后就只需要占用0.75M了(假设图片是ARGB_8888类型，即每个像素点占用4个字节)。下面的方法可以根据传入的宽和高<br>
+			下面的方法可以根据传入的宽和高，计算出合适的inSampleSize值：
+			
+			```
+			public static int calculateInSampleSize(BitmapFactory.Options options,  
+        int reqWidth, int reqHeight) {  
+			    // 源图片的高度和宽度  
+			    final int height = options.outHeight;  
+			    final int width = options.outWidth;  
+			    int inSampleSize = 1;  
+			    if (height > reqHeight || width > reqWidth) {  
+			        // 计算出实际宽高和目标宽高的比率  
+			        final int heightRatio = Math.round((float) height / (float) reqHeight);  
+			        final int widthRatio = Math.round((float) width / (float) reqWidth);  
+			        // 选择宽和高中最小的比率作为inSampleSize的值，这样可以保证最终图片的宽和高  
+			        // 一定都会大于等于目标的宽和高。  
+			        inSampleSize = heightRatio < widthRatio ? heightRatio : widthRatio;  
+			    }  
+			    return inSampleSize;  
+			} 
+			```
+
+3. 非压缩下加载大图
+	1. 使用场景<br>
+		假如我们现在在做一个图片显示工具，需要我们去加载一张长图超级大的图（将近10M），又不允许我们去压缩处理。
+
+	2. 使用BitmapRegionDecoder<br>
+		BitmapRegionDecoder主要用于显示图片的某一块矩形区域，如果你需要显示某个图片的指定区域，那么这个类非常合适。<br>
+		所以针对这种超大图片，我们可以通过一点点显示图片的某一块区域，然后通过手机滑动图片一点点查看即可，那么至少只需要一个方法去设置图片；一个方法传入显示的区域即可；
 
 
+4. 图片缓存技术			
+	1. 简介<br>
+		为了节省用户流量，提高图片加载效率，我们通常使用图片三级缓存策略，即通过网络、本地、内存三级缓存图片，来减少不必要的网络交互，避免浪费流量。 
 
+	2. 原理<br>
+		以url为key，先从内存中寻找，再从本地文件中寻找，最后再请求网络。
 
+	3. 内存缓存
+		1. 实现类<br>
+			内存缓存最核心的类是LruCache (此类在android-support-v4的包中提供) 。这个类非常适合用来缓存图片，它的主要算法原理是把最近使用的对象用强引用存储在 LinkedHashMap 中，并且把最近最少使用的对象在缓存值达到预设定值之前从内存中移除。
+		2. 弱饮用和软引用被放弃<br>
+			在过去，我们经常会使用一种非常流行的内存缓存技术的实现，即软引用或弱引用 (SoftReference or WeakReference)。但是现在已经不再推荐使用这种方式了，因为从 Android 2.3 (API Level 9)开始，垃圾回收器会更倾向于回收持有软引用或弱引用的对象，这让软引用和弱引用变得不再可靠。
+		
+		3. 确定合适缓存大小的因素
+			1. 你的设备可以为每个应用程序分配多大的内存？
+			2. 设备屏幕上一次最多能显示多少张图片？有多少图片需要进行预加载，因为有可能很快也会显示在屏幕上？
+			3. 你的设备的屏幕大小和分辨率分别是多少？一个超高分辨率的设备（例如 Galaxy Nexus) 比起一个较低分辨率的设备（例如 Nexus S），在持有相同数量图片的时候，需要更大的缓存空间。
+			4. 图片的尺寸和大小，还有每张图片会占据多少内存空间。
+			5. 图片被访问的频率有多高？会不会有一些图片的访问频率比其它图片要高？如果有的话，你也许应该让一些图片常驻在内存当中，或者使用多个LruCache 对象来区分不同组的图片。
+			6. 你能维持好数量和质量之间的平衡吗？有些时候，存储多个低像素的图片，而在后台去开线程加载高像素的图片会更加的有效。
 
+5. 图片的开源框架学习<br>
+	TODO
+	
+10. 参考
+	1. https://www.jianshu.com/p/da754f9fad51
+	2. https://www.jianshu.com/p/80b2068a90a8 

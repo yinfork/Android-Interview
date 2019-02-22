@@ -342,7 +342,9 @@
 		
 		2. 拉链法：把所有的同义词用单链表链接起来。在这种方法下，哈希表每个单元中存放的不再是元素本身，而是相应同义词单链表的头指针。HashMap就是使用这种方法解决冲突的。	
 		
-		
+	3. 参考
+		1. https://github.com/hadyang/interview/blob/master/basic/algo/hash.md
+		2. https://www.oschina.net/question/2540936_2186006
 		
 9. HashSet和HashMap如何检查重复<br>
 	当你把对象加入HashSet时，HashSet会先计算对象的hashcode值来判断对象加入的位置，同时也会与其他加入的对象的hashcode值作比较，如果没有相符的hashcode，HashSet会假设对象没有重复出现。但是如果发现有相同hashcode值的对象，这时会调用equals（）方法来检查hashcode相等的对象是否真的相同。如果两者相同，HashSet就不会让加入操作成功。（摘自我的Java启蒙书《Head first java》第二版）
