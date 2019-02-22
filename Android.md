@@ -9,6 +9,7 @@
 6. [性能优化](#performance_optimization)
 7. [Android存储](#android_storage)
 8. [图片加载](#android_image)
+9. [Android各个版本的新特性](#android_version)
 
 ----
 
@@ -847,7 +848,9 @@ TODO
 
 2. Binder介绍
 	1. Binder框架原理图<br>
-		![](https://github.com/yinfork/Android-Interview/blob/master/res/android/ipc/android_binder.png?raw=true)
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/android/ipc/android_binder.png?raw=true)<br><br>
+		
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/android/ipc/android_binder_2.png?raw=true)
 	
 	2. Binder框架的四个角色
 		1. Client进程：使用服务的进程，运行在用户空间。
@@ -890,9 +893,21 @@ TODO
 		1. 性能方面：Binder相对于传统的Socket方式，更加高效。Binder数据拷贝只需要一次
 		2. 安全方面：传统的进程通信方式对于通信双方的身份并没有做出严格的验证，比如Socket通信的IP地址是客户端手动填入，很容易进行伪造。然而，Binder机制从协议本身就支持对通信双方做身份校检，从而大大提升了安全性。
 		
+	6. Binder线程池<br>
+		每个Server进程在启动时会创建一个binder线程池，并向其中注册一个Binder线程；之后Server进程也可以向binder线程池注册新的线程，或者Binder驱动在探测到没有空闲binder线程时会主动向Server进程注册新的的binder线程。**对于一个Server进程有一个最大Binder线程数限制，默认为16个binder线程，超过的请求会被阻塞等待空闲的Binder线程**，例如Android的system_server进程就存在16个线程。对于所有Client端进程的binder请求都是交由Server端进程的binder线程来处理的。
+	
+	7. Binder传输数据的大小限制<br>
+		mmap函数会为Binder数据传递映射一块连续的虚拟地址，这块虚拟内存空间其实是有大小限制的，不同的进程可能还不一样。<br>
+		普通的由Zygote孵化而来的用户进程，所映射的Binder内存大小是不到1M的，准确说是 110241024) - (4096 *2) ：这个限制定义在ProcessState类中，如果传输说句超过这个大小，系统就会报错，因为Binder本身就是为了进程间频繁而灵活的通信所设计的，并不是为了拷贝大数据而使用的：
+		
+		```
+		#define BINDER_VM_SIZE ((1*1024*1024) - (4096 *2))
+		```
+		
 	10. 参考
 		1. https://github.com/LRH1993/android_interview/blob/master/android/advance/binder.md
-		2. https://github.com/hadyang/interview/blob/master/android/binder.md 	
+		2. https://github.com/hadyang/interview/blob/master/android/binder.md
+		3. https://juejin.im/post/58c90816a22b9d006413f624
 	
 3. Android线程间消息分发机制
 	1. 定义<br>
