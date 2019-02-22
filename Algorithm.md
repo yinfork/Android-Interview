@@ -4,6 +4,55 @@
 
 2. 常见数据结构
 	1. 链表
+		1. 单链表的表示
+			
+			```
+			class ListNode{
+		        int value;
+		        ListNode next;
+		        public ListNode(int value,ListNode next){
+		        }
+		    }
+			```
+		
+		2. 链表的反转
+			1. 循环法
+				
+				```
+				public ListNode reverseListNodeWithIterative(ListNode head){
+			        if(head ==null || head.next==null){
+			            return head;
+			        }
+			        ListNode pre = null;
+			        ListNode cur = head;
+			        while(cur!=null){
+			            ListNode next = cur.next;
+			            cur.next = pre;
+			            pre = cur;
+			            cur = next;
+			        }
+			        return pre;
+			    }
+				```
+		
+			2. 递归法
+
+				```
+				public ListNode reverseListNodeWithRecursive(ListNode head){
+			        if(head==null || head.next==null){
+			            return head;
+			        }
+			        ListNode nextNode = head.next;
+			        ListNode newHead = reverseListNodeWithRecursive(head);
+			        nextNode.next = head;
+			        head.next = null;
+			        return newHead;
+			    }
+				
+				```
+
+		10. 参考
+			1. https://blog.csdn.net/xuexichiru/article/details/79118041
 
 3. 常见算法	
 	1. 排序算法
