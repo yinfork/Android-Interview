@@ -908,6 +908,7 @@ TODO
 		1. https://github.com/LRH1993/android_interview/blob/master/android/advance/binder.md
 		2. https://github.com/hadyang/interview/blob/master/android/binder.md
 		3. https://juejin.im/post/58c90816a22b9d006413f624
+		4. http://gityuan.com/2015/11/28/binder-summary/
 	
 3. Android线程间消息分发机制
 	1. 定义<br>
