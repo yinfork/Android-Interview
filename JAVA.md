@@ -5,6 +5,7 @@
 2. [Java集合框架](#java_collection)
 3. [Java虚拟机&内存](#java_memory)
 4. [Java多线程&并发处理](#java_concurrent)
+5. [设计模式](#design_pattern)
 
 ----
 
@@ -921,6 +922,141 @@ TODO
 	6. http://www.importnew.com/23535.html
 	7. https://www.jianshu.com/p/ec7200a26d8b
 
+----	
+	
+<span id = "design_pattern"></span>
+#### 设计模式 [(TOP)](#home)	
+1. 六种方式写单例模式
+	1. 懒汉式，线程不安全<br>
+		这段代码简单明了，而且使用了懒加载模式，但是却存在致命的问题。当有多个线程并行调用 getInstance() 的时候，就会创建多个实例。也就是说在多线程下不能正常工作。
+
+		```
+		public class Singleton {
+		    private static Singleton instance;
+		    private Singleton (){}
+		
+		    public static Singleton getInstance() {
+		     if (instance == null) {
+		         instance = new Singleton();
+		     }
+		     return instance;
+		    }
+		}
+		```
+
+	2. 懒汉式，线程安全
+		为了解决上面懒汉式线程不安全的问题，最简单的方法是将整个 getInstance() 方法设为同步（synchronized）。
+		虽然做到了线程安全，并且解决了多实例的问题，但是它并不高效。因为在任何时候只能有一个线程调用 getInstance() 方法。但是同步操作只需要在第一次调用时才被需要，即第一次创建单例实例对象时。这就引出了双重检验锁。
+
+		```
+		public static synchronized Singleton getInstance() {
+		    if (instance == null) {
+		        instance = new Singleton();
+		    }
+		    return instance;
+		}
+		```
+
+	3. 双重检验锁
+		1. 两个注意点
+			1. 两次判空
+				这种写法在getSingleton方法中对singleton进行了两次判空，第一次是为了不必要的同步，第二次是在singleton等于null的情况下才创建实例
+		
+			2. 使用 volatile 的主要原因是：禁止指令重排序优化导致报错。
+				1. 一个赋值操作的过程<br>
+					instance = new Singleton()这句，这并非是一个原子操作，事实上在 JVM 中这句话大概做了下面 3 件事情。
+
+					1. 给 instance 分配内存
+					2. 调用 Singleton 的构造函数来初始化成员变量
+					3. 将instance对象指向分配的内存空间（执行完这步 instance 就为非 null 了）
+				
+				2. 指令重排序的问题<br>
+					但是在 JVM 的即时编译器中存在指令重排序的优化。也就是说上面的第二步和第三步的顺序是不能保证的，最终的执行顺序可能是 1-2-3 也可能是 1-3-2。如果是后者，则在 3 执行完毕、2 未执行之前，被线程二抢占了，这时 instance 已经是非 null 了（但却没有初始化），所以线程二会直接返回 instance，然后使用，然后顺理成章地报错。
+				3. 使用 volatile 避免指令重排序的问题<br>
+					在 volatile 变量的赋值操作后面会有一个内存屏障（生成的汇编代码上），读操作不会被重排序到内存屏障之前。比如上面的例子，取操作必须在执行完 1-2-3 之后或者 1-3-2 之后，不存在执行到 1-3 然后取到值的情况。从「先行发生原则」的角度理解的话，就是对于一个 volatile 变量的写操作都先行发生于后面对这个变量的读操作（这里的“后面”是时间上的先后顺序）。
+		
+				4. 在 Java 5 以前的版本使用了 volatile 的双检锁还是有问题的<br>
+					其原因是 Java 5 以前的 JMM （Java 内存模型）是存在缺陷的，即时将变量声明成 volatile 也不能完全避免重排序，主要是 volatile 变量前后的代码仍然存在重排序问题。这个 volatile 屏蔽重排序的问题在 Java 5 中才得以修复。
+				
+		2. 例子<br>
+	
+			```
+			public class Singleton {
+			    private volatile static Singleton instance; //声明成 volatile
+			    private Singleton (){}
+			
+			    public static Singleton getSingleton() {
+			        if (instance == null) {                         
+			            synchronized (Singleton.class) {
+			                if (instance == null) {       
+			                    instance = new Singleton();
+			                }
+			            }
+			        }
+			        return instance;
+			    }
+			   
+			}
+			```
+	4. 饿汉式 static final field
+
+		1. 优点<br>
+			这种方法非常简单，因为单例的实例被声明成 static 和 final 变量了，在第一次加载类到内存中时就会初始化，所以创建实例本身是线程安全的。
+
+		2. 缺点<br>
+			缺点是它不是一种懒加载模式（lazy initialization），单例会在加载类后一开始就被初始化，即使客户端没有调用 getInstance()方法。<br>
+			饿汉式的创建方式在一些场景中将无法使用：譬如 Singleton 实例的创建是依赖参数或者配置文件的，在 getInstance() 之前必须调用某个方法设置参数给它，那样这种单例写法就无法使用了。
+
+		3. 例子<br>
+		
+			```
+			public class Singleton{
+			    //类加载时就初始化
+			    private static final Singleton instance = new Singleton();
+			    
+			    private Singleton(){}
+			
+			    public static Singleton getInstance(){
+			        return instance;
+			    }
+			}
+			```
+
+	5. 静态内部类 static nested class
+
+		1. 优点<br>
+			《Effective Java》上所推荐的。这种写法仍然使用JVM本身机制保证了线程安全问题；由于 SingletonHolder 是私有的，除了 getInstance() 之外没有办法访问它，因此它是懒汉式的；同时读取实例的时候不会进行同步，没有性能缺陷；也不依赖 JDK 版本。
+		
+		2. 缺点<br>
+			无
+		
+		3. 例子<br>
+			
+			```
+			public class Singleton {  
+			    private static class SingletonHolder {  
+			        private static final Singleton INSTANCE = new Singleton();  
+			    }  
+			    private Singleton (){}  
+			    public static final Singleton getInstance() {  
+			        return SingletonHolder.INSTANCE; 
+			    }  
+			}
+			```
+	6. 枚举 Enum<br>
+		用枚举写单例实在太简单了！这也是它最大的优点。<br>
+		创建枚举默认就是线程安全的，所以不需要担心double checked locking，而且还能防止反序列化导致重新创建新的对象。但是还是很少看到有人这样写，可能是因为不太熟悉吧。<br>
+
+		```
+		public enum Singleton {  
+			INSTANCE;  
+				public void doSomeThing() {  
+			}  
+		}  
+		```
+		
+		<br>
+		我们可以通过EasySingleton.INSTANCE来访问实例，这比调用getInstance()方法简单多了。
 
 #### 面向对象的特性
 TODO
