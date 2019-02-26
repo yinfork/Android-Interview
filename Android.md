@@ -10,6 +10,7 @@
 7. [Android存储](#android_storage)
 8. [图片加载](#android_image)
 9. [Android各个版本的新特性](#android_version)
+10. [ListView与RecycleView](#android_list)
 
 ----
 
@@ -880,7 +881,7 @@ TODO
 	
 	4. Binder的数据拷贝<br>
 		1. Binder数据拷贝只需要一次<br>
-			Linux内核实际上没有从一个用户空间到另一个用户空间直接拷贝的函数，需要先用 copy_from_user() 拷贝到内核空间，再用 copy_to_user() 拷贝到另一个用户空间。为了实现用户空间到用户空间的拷贝，mmap()分配的内存除了映射进了接收方进程里，还映射进了内核空间。所以调用 copy_from_user() 将数据拷贝进内核空间也相当于拷贝进了接收方的用户空间，这就是Binder只需一次拷贝的"秘密"。
+			Linux内核实际上没有从一个用户空间到另一个用户空间直接拷贝的函数，需要先用 copy_from_user() 拷贝到内核空间，再用 copy_to_user() 拷贝到另一个用户空间。**为了实现用户空间到用户空间的拷贝，mmap()分配的内存除了映射进了接收方进程里，还映射进了内核空间。所以调用 copy_from_user() 将数据拷贝进内核空间也相当于拷贝进了接收方的用户空间，这就是Binder只需一次拷贝的"秘密"**。
 	
 		2. 对比其他进程间通信方式<br>
 			在移动设备上（性能受限制的设备，比如要省电），广泛地使用跨进程通信对通信机制的性能有严格的要求，Binder相对于传统的Socket方式，更加高效。Binder数据拷贝只需要一次，而管道、消息队列、Socket都需要2次，共享内存方式一次内存拷贝都不需要，但实现方式又比较复杂。
@@ -1153,6 +1154,9 @@ TODO
 			5. 图片被访问的频率有多高？会不会有一些图片的访问频率比其它图片要高？如果有的话，你也许应该让一些图片常驻在内存当中，或者使用多个LruCache 对象来区分不同组的图片。
 			6. 你能维持好数量和质量之间的平衡吗？有些时候，存储多个低像素的图片，而在后台去开线程加载高像素的图片会更加的有效。
 
+		4. LruCache实现原理<br>
+			LruCache中维护了一个集合LinkedHashMap，该LinkedHashMap是以访问顺序排序的。当调用put()方法时，就会在结合中添加元素，并调用trimToSize()判断缓存是否已满，如果满了就用LinkedHashMap的迭代器删除队尾元素，即近期最少访问的元素。当调用get()方法访问缓存对象时，就会调用LinkedHashMap的get()方法获得对应集合元素，同时会更新该元素到队头。
+
 5. 图片的开源框架学习<br>
 	TODO
 	
@@ -1268,9 +1272,226 @@ TODO
 10. 参考	
 	1. https://www.jianshu.com/p/88409d6f5795 
 	2. https://www.lichaoyu.com/2018/07/16/2018-07-16-Android%E5%90%84%E7%89%88%E6%9C%AC%E6%96%B0%E7%89%B9%E6%80%A7%E6%80%BB%E7%BB%93/
+
+----
+
+<span id = "android_list"></span>
+#### ListView与RecycleView [(TOP)](#home)
+1. ListView 与 RecycleView的相同点<br>
+	大体上的缓存机制类似，但是细节不相同。<br> 	相似点：离屏的ItemView即被回收至缓存，入屏的ItemView则会优先从缓存中获取
+
+2. ListView 与 RecycleView的不同点
+	1. 多样式：可以对数据的展示进行自有定制，可以是列表，网格甚至是瀑布流，除此之外你还可以自定义样式
+	2. 定向刷新：可以对指定的Item数据进行刷新
+	3. 刷新动画：RecyclerView支持对Item的刷新添加动画
+	4. 添加装饰：相对于ListView以及GridView的单一的分割线，RecyclerView可以自定义添加分割样式
+	5. 缓存机制：ListView采用一级缓存（或叫二级），RecycleView采用三级缓存（或叫四级）
+
+3. RecycleView缓存	
+	1. 缓存类介绍
+		RecyclerView在Recyler里面实现ViewHolder的缓存，Recycler里面的实现缓存的主要包含以下5个对象：
+	
+		1. ArrayList mAttachedScrap：<br>
+			未与RecyclerView分离的ViewHolder列表。如果仍依赖于 RecyclerView （比如已经滑动出可视范围，但还没有被移除掉），但已经被标记移除的 ItemView 集合会被添加到 mAttachedScrap 中<br>
+			按照id和position来查找ViewHolder
+	
+		2. ArrayList mChangedScrap：<br>
+			表示数据已经改变的viewHolder列表。存储 notifXXX 方法时需要改变的 ViewHolder,匹配机制按照position和id进行匹配
+		
+		3. ArrayList mCachedViews：<br>
+			缓存ViewHolder，主要用于解决RecyclerView滑动抖动时的情况，还有用于保存Prefetch的ViewHoder<br>
+			最大的数量为：mViewCacheMax = mRequestedCacheMax + extraCache（extraCache是由prefetch的时候计算出来的）
+	
+		4. ViewCacheExtension mViewCacheExtension：<br>
+			开发者可自定义的一层缓存，是虚拟类ViewCacheExtension的一个实例，开发者可实现方法getViewForPositionAndType(Recycler recycler, int position, int type)来实现自己的缓存。<br>
+			适用场景:<br>
+			1. 位置固定
+			2. 内容不变
+			3. 数量有限
+	
+		5. mRecyclerPool ViewHolder缓存池<br>
+			在有限的mCachedViews中如果存不下ViewHolder时，就会把ViewHolder存入RecyclerViewPool中。
+			1. 按照Type来查找ViewHolder
+			2. 每个Type默认最多缓存5个
+	
+		6. 实际代码
+			
+			```
+			public final class Recycler {
+			    final ArrayList<ViewHolder> mAttachedScrap = new ArrayList<>();
+			    ArrayList<ViewHolder> mChangedScrap = null;
+			
+			    final ArrayList<ViewHolder> mCachedViews = new ArrayList<ViewHolder>();
+			
+			    private final List<ViewHolder>
+			            mUnmodifiableAttachedScrap = Collections.unmodifiableList(mAttachedScrap);
+			
+			    private int mRequestedCacheMax = DEFAULT_CACHE_SIZE;
+			    int mViewCacheMax = DEFAULT_CACHE_SIZE;
+			
+			    RecycledViewPool mRecyclerPool;
+			
+			    private ViewCacheExtension mViewCacheExtension;
+			
+			    static final int DEFAULT_CACHE_SIZE = 2;
+			```
+	
+	2. RecycleView的三级缓存介绍<br>
+		缓存对象分为了3级。每次创建ViewHolder的时候，会按照优先级依次查询缓存创建ViewHolder。每次讲ViewHolder缓存到Recycler缓存的时候，也会按照优先级依次缓存进去。<br>
+		也有人说成是四级缓存，把屏幕内缓存指在屏幕中显示的ViewHolder当作第一级缓存，这些ViewHolder会缓存在mAttachedScrap、mChangedScrap中。<br>
+		三级缓存分别是：<br>
+		1. 一级缓存 mCachedViews：返回布局和内容都都有效的ViewHolder
+			1. 按照position或者id进行匹配
+			2. 命中一级缓存无需onCreateViewHolder和onBindViewHolder
+			3. mAttachScrap在adapter.notifyXxx的时候用到
+			4. mChanedScarp在每次View绘制的时候用到，因为getViewHolderForPosition非调用多次，后面将
+			5. mCachedView：用来解决滑动抖动的情况，默认值为2
+	
+		2. 二级缓存 ViewCacheExtension(用户自定义逻辑的缓存类)：返回View
+			1. 按照position和type进行匹配
+			2. 直接返回View
+			3. 需要自己继承ViewCacheExtension实现
+			4. 位置固定，内容不发生改变的情况，比如说Header如果内容固定，就可以使用
+			5. 使用场景
+				1. 其position固定(比如广告之类)
+				2. 不会改变(view type等)
+				3. 数量合理,以便可以保存在内存中
+			6. 使用例子
+				
+				```
+				SparseArray<View> specials = new SparseArray<>();
+				...
+				recyclerView.getRecycledViewPool().setMaxRecycledViews(SPECIAL, 0);
+				recyclerView.setViewCacheExtension(new RecyclerView.ViewCacheExtension() {
+				    @Override
+				    public View getViewForPositionAndType(RecyclerView.Recycler recycler,
+				                                            int position, int type) {
+				        return type == SPECIAL ? specials.get(position) : null;
+				    }
+				});
+				...
+				class SpecialViewHolder extends RecyclerView.ViewHolder {
+				        ...     
+				    public void bindTo(int position) {
+				        ...
+				        specials.put(position, itemView);
+				    }
+				}
+				```
+				
+		3. 三级缓存 RecycledViewPool：返回布局有效，内容无效的ViewHolder
+			1. 按照type进行匹配，每个type缓存值默认=5
+			2. layout是有效的，但是内容是无效的
+			3. 多个RecycleView可共享,可用于多个RecyclerView的优化
+		4. 缓存处理 
+	
+	3. RecycleView缓存命中例子
+		查找一个缓存的ViewHolder的时候,会按照mCachedViews -> ViewCacheExtension -> RecycledViewPool的顺序来查找<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/android/view/recycleview_cache_sample.gif?raw=true)<br>
+		
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/android/view/recycleview_cache_step.png?raw=true)<br>
+	
+		1. 实例解释：
+			1. 由于ViewCacheExtension在实际使用的时候较少用到，因此本例中忽略二级缓存
+			2. mChangedScrap和mAttchScrap是RecyclerView内部控制的缓存，本例暂时忽略。
+			3. 为了简化问题，暂时不考虑Pretch的情况
+			4. 图片解释：
+				1. RecyclerView包含三部分：已经出屏幕，在屏幕里面，即将进入屏幕，我们滑动的方向是向上
+				2. RecyclerView包含三种Type：1，2，3。屏幕里面的都是Type=3
+				3. 红色的线代表已经出屏幕的ViewHoder与Recycler的交互情况
+				4. 绿色的线代表，即将进入屏幕的ViewHoder进入屏幕时候，ViewHolder与Recycler的交互情况
 	
 	
+		2. 出屏幕时候的情况
+			1. 步骤1：当ViewHolder（position=0，type=1）出屏幕的时候，由于mCacheViews是空的，那么就直接放在mCacheViews里面，ViewHolder在mCacheViews里面布局和内容都是有效的，因此可以直接复用。
+			2. 步骤2：ViewHolder（position=1，type=2）同步骤1
+			3. 步骤3：当ViewHolder（position=2，type=1）出屏幕的时候由于一级缓存mCacheViews已经满了，因此将其放入RecyclerPool（type=1）的缓存池里面。此时ViewHolder的内容会被标记为无效，当其复用的时候需要再次通过Adapter.bindViewHolder来绑定内容。
+			4. 步骤4：ViewHolder（position=3，type=2）同步骤3
 	
+		3. 进屏幕时候的情况
+			1. 步骤5：当ViewHolder（position=3-10，type=3）进入屏幕绘制的时候，由于Recycler的mCacheViews里面找不到position匹配的View，同时RecyclerPool里面找不到type匹配的View，因此，其只能通过adapter.createViewHolder来创建ViewHolder，然后通过adapter.bindViewHolder来绑定内容。
+			2. 步骤6：当ViewHolder（position=11，type=1）进入屏幕的时候，发现ReccylerPool里面能找到type=1的缓存，因此直接从ReccylerPool里面取来使用。由于内容是无效的，因此还需要调用bindViewHolder来绑定布局。同时ViewHolder（position=4，type=3）需要出屏幕，其直接进入RecyclerPool（type=3）的缓存池中
+			3. 步骤7：ViewHolder（position=12，type=2）同步骤6
 	
+		4. 屏幕往下拉ViewHoder（position=1）进入屏幕的情况
+			1. 步骤8：由于mCacheView里面的有position=1的ViewHolder与之匹配，直接返回。由于内容是有效的，因此无需再次绑定内容
+			2. 步骤9：ViewHolder（position=0）同步骤8
 	
+	4. ListView和RecycleView缓存机制的对比
+		1. 缓存的内容不同
+			1. **RecyclerView缓存RecyclerView.ViewHolder**，抽象可理解为：<br>
+				View + ViewHolder(避免每次createView时调用findViewById) + flag(标识状态)；
+			
+			2. ListView缓存View。
 	
+		2. 缓存的机制不同
+			1. ListView是一级缓存（假如把正在使用的缓存也算，就是二级缓存）<br>
+				![](https://github.com/yinfork/Android-Interview/blob/master/res/android/view/listview_get_cache.png?raw=true)
+				
+			2. RecycleView是三级缓存（假如把正在使用的缓存也算，就是四级缓存）<br>
+				![](https://github.com/yinfork/Android-Interview/blob/master/res/android/view/recycleview_get_cache.png?raw=true)
+
+4. 局部刷新<br>
+	可以对指定的Item进行刷新。
+	1. 作用
+		通过局部刷新，就能避免调用许多无用的bindView。
+	
+	2. 原理
+	
+		不管是全部刷新还是指定范围的定向刷新，RecyclerView都是需要重新测量的，所以，定向刷新的真正语义是对指定范围的ViewHolder进行数据刷新，不会像ListView一样，刷新所有的，所以我们只能从布局的时候来查找
+		
+		1. 重新绘制
+			以RecyclerView中notifyItemRemoved(1)为例，最终会调用requestLayout()，使整个RecyclerView重新绘制，过程为：
+onMeasure()-->onLayout()-->onDraw()
+		2. onLayout()为重点，分为三步：
+			1. dispathLayoutStep1()：记录RecyclerView刷新前列表项ItemView的各种信息，如Top,Left,Bottom,Right，用于动画的相关计算；
+			2. dispathLayoutStep2()：真正测量布局大小，位置，核心函数为layoutChildren()；<br>
+				**在 layoutChildren() 中，RecyclerView通过对pos和flag的预处理，使得bindview只调用一次**
+			3. dispathLayoutStep3()：计算布局前后各个ItemView的状态，如Remove，Add，Move，Update等，如有必要执行相应的动画.
+
+	3. 数据更新时，ListView和RecycleView的对比<br>
+		ListView和RecyclerView最大的区别在于数据源改变时的缓存的处理逻辑，ListView是"一锅端"，将所有的mActiveViews都移入了二级缓存mScrapViews，而RecyclerView则是更加灵活地对每个View修改标志位，区分是否重新bindView。<br>
+		![](https://github.com/yinfork/Android-Interview/blob/master/res/android/view/listview_recycleview_refresh.gif?raw=true)
+
+	4. 当更新前后的集合的数据差不多时，可以用 DiffUtil 进行局部刷新<br>
+		DifUtil的主要操作主要是用来比对两个新旧集合之间产生的差异。最后调用 dispatchUpdatesTo 进行局部刷新。
+
+		
+5. 定向刷新	<br>
+	假如一个ViewHolder里面有多种数据，只更新某项数据时使用
+	1. 调用<br>
+		我们刷新的时候会调用一个方法，叫做notifyItemChanged，通常会传一个起始位置以及范围，其实我们还可以传入一个Object类型的参数
+		
+		```
+		public final void notifyItemChanged(int position, Object payload) {
+		    mObservable.notifyItemRangeChanged(position, 1, payload);
+		}	
+		```
+	
+	2. 获取定向刷新的参数<br>
+		复写onBindViewHolder这个方法<br>
+
+		```
+		@Override
+		public void onBindViewHolder(RecyclerView.ViewHolder holder, int position, List payloads) {
+		  //点进去会进入下面的方法
+		    super.onBindViewHolder(holder, position, payloads);
+		}
+		```
+		
+		payloads 这个参数有什么用，就是用于局部刷新的，比如一个ViewHolder展示了很多关于学生的数据，姓名，年龄，爱好，学习成绩，家庭住址等，但是我们只需要刷新一下学习成绩，我们在调用notifyItemChanged的时候只需要调用一下otifyItemChanged(0, score),然后在Adapter中进行获取就好了刷新这一项就好了。
+	
+
+6. RecycleView的优化方向<br>
+	![](https://github.com/yinfork/Android-Interview/blob/master/res/android/view/recycleview_opt.png?raw=true)
+
+10. 参考
+	1. https://cloud.tencent.com/developer/article/1005658
+	2. https://juejin.im/post/5b79a0b851882542b13d204b 
+	3. https://juejin.im/post/5a7569676fb9a063435eaf4c
+
+
+
+
+
+

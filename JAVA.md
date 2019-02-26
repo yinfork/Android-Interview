@@ -1058,5 +1058,11 @@ TODO
 		<br>
 		我们可以通过EasySingleton.INSTANCE来访问实例，这比调用getInstance()方法简单多了。
 
+	10. 参考
+		1. http://wuchong.me/blog/2014/08/28/how-to-correctly-write-singleton-pattern/
+		2. https://blog.csdn.net/itachi85/article/details/50510124
+
+		
+		
 #### 面向对象的特性
 TODO
