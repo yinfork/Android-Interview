@@ -701,7 +701,32 @@ TODO
 		1. https://github.com/LRH1993/android_interview/blob/master/android/basis/decorview.md
 		2. https://github.com/hadyang/interview/blob/master/android/activity-view-window.md
 
-5. 几种Layout的性能比较
+5. 几种Layout的性能比较<br>
+	TODO
+
+6. px、pt、sp、dp之间的换算
+	1. 单位
+		1. px（像素）：屏幕上的点。
+		2. in（英寸）：长度单位。
+		3. mm（毫米）：长度单位。
+		4. pt（磅）：1/72英寸。
+		5. dp（与密度无关的像素）：一种基于屏幕密度的抽象单位。在每英寸160点的显示器上，1dp = 1px。
+		6. sp（与刻度无关的像素）：与dp类似，但是可以根据用户的字体大小首选项进行缩放。
+		7. 分辨率:整个屏是多少点，比如800x480，它是对于软件来说的显示单位，以px为单位的点。
+		8. density(密度)值表示每英寸有多少个显示点，与分辨率是两个概念。
+	
+	2. APK资源包获取资源的逻辑
+		1. 当屏幕density=240时使用hdpi标签的资源 
+		2. 当屏幕density=160时，使用mdpi标签的资源
+		3. 当屏幕density=120时，使用ldpi标签的资源。 
+   
+   3. 单位之间的转换<br>
+   		一般android设置长度和宽度多用dip,设置字体大小多用sp
+		1. 在屏幕密度为160
+			1. 1dp=1px=1dip
+			2. 1pt = 160/72sp
+			3. 1pt = 1/72 英寸
+		2. 当屏幕密度为240时，1dp=1dip=1.5px.
 
 ----
 
