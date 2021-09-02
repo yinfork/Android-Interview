@@ -61,6 +61,7 @@
 	1. https://github.com/Snailclimb/JavaGuide
 	2. https://zhuanlan.zhihu.com/p/23533393
 	3. https://github.com/it-interview/EasyJob
+	4. https://blog.csdn.net/javazejian/article/category/6940462 (并发方向重点推荐)
 	
 2. 含有Android
 	1. https://github.com/LRH1993/android_interview
@@ -68,3 +69,6 @@
 	3. http://www.jackywang.tech/AndroidInterview-Q-A/interview/
 	4. https://github.com/MindorksOpenSource/android-interview-questions
 	5. https://github.com/hadyang/interview
+	6. https://www.jianshu.com/p/03068ab22340
+	7. https://www.jianshu.com/p/5c92689c9be2
+	8. https://www.kancloud.cn/yumufeng/get-android-offer/183758

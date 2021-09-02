@@ -11,6 +11,7 @@
 8. [图片加载](#android_image)
 9. [Android各个版本的新特性](#android_version)
 10. [ListView与RecycleView](#android_list)
+11. [插件化和热修复](#android_hotfix)
 
 ----
 
@@ -1514,6 +1515,84 @@ onMeasure()-->onLayout()-->onDraw()
 	1. https://cloud.tencent.com/developer/article/1005658
 	2. https://juejin.im/post/5b79a0b851882542b13d204b 
 	3. https://juejin.im/post/5a7569676fb9a063435eaf4c
+
+----
+
+<span id = "android_hotfix"></span>
+#### 插件化和热修复 [(TOP)](#home)
+1. 概述<br>
+	插件化和热修复不是同一个概念。<br>
+	虽然站在技术实现的角度来说，他们都是从系统加载器的角度出发，无论是采用hook方式，亦或是代理方式或者是其他底层实现，都是通过“欺骗”Android 系统的方式来让宿主正常的加载和运行插件（补丁）中的内容；<br>
+	但是二者的出发点是不同的。插件化顾名思义，更多是想把需要实现的模块或功能当做一个独立的提取出来，减少宿主的规模，当需要使用到相应的功能时再去加载相应的模块。热修复则往往是从修复bug的角度出发，强调的是在不需要二次安装应用的前提下修复已知的bug。
+
+2. 插件化发展历程及现状<br>
+	关于插件化技术的起源可以追溯到5年前
+	1. 2012年的 AndroidDynamicLoader ，他的原理是动态加载不同的Fragment实现UI替换，可以说是开山鼻祖了，但是这种方案可扩展性不强。
+	
+	2. 再到后来出现了23Code,他可以直接下载一个自定义控件的demo，并且运行起来。
+	
+	3. 2014年一个里程碑式的年份，任玉刚（俗称主席）发布了dynamic-load-apk,也叫做DL。在这个框架里提供了两个很重要的思路：
+		1. 如何管理插件内Activity的生命周期： 使用 DLProxyActivity 采用静态代理的方式去调用插件中Activity的生命周期方法。
+		2. 如何加载插件内的资源文件：通过反射调用AssetManager 中到的addAssetPath方法就可以将特定路径的资源加载到系统内存中使用。
+
+	4. 2015年 DroidPlugin<br>
+		DroidPlugin 是Andy Zhang在Android系统上实现了一种新的 插件机制 :它可以在无需安装、修改的情况下运行APK文件,此机制对改进大型APP的架构，实现多团队协作开发具有一定的好处。 这段话是DroidPlugin在Github README 文档中的介绍。这款来自360的插件化框架.
+	
+	5. 2015年 DynamicAPK 这个就……，貌似因为License的原因已经完全不更新了。
+
+	6. 2017 RePlugin 这是360 开源的插件化框架，按照他自己的说法，相较于其他框架，他对系统的hook只有一处，那就是ClassLoader，这样从理论来说，貌似会有更好的稳定性。
+
+	7. 2017年 atlas这个是阿里今年刚刚开源的插件化开发框架，可以说是非常强大；具体原理参考详解 Atlas 框架原理；还没有用过。
+
+	8. Small<br>
+		最后再说一下Small，个人感觉Small 所提供了一种比插件化更高层次的概念，组件化；把一个完整的APP看成是由许多可以复用模块组件组成（这个有点像React Native的开发理念）；开发起来像是搭积木的感觉。有兴趣的可以去Small官网了解一下。
+
+3. 热修复发展历程及现状<br>
+	1. 热修复基本原理
+		假设现在代码中的某一个类或者是某几个类有bug，那么我们可以在修复完bug之后，可以将这些个类打包成一个补丁文件，然后通过这个补丁文件封装出一个Element对象，并且将这个Element对象插到原有dexElements数组的最前端，这样当DexClassLoader去加载类时，优先会从我们插入的这个Element中找到相应的类，虽然那个有bug的类还存在于数组中后面的Element中，但由于双亲加载机制的特点，这个有bug的类已经没有机会被加载了，这样一个bug就在没有重新安装应用的情况下修复了。
+	2. QQ 空间超级补丁方案
+		1. CLASS_ISPREVERIFIED问题
+			1. 在apk安装的时候系统会将dex文件优化成odex文件，在优化的过程中会涉及一个预校验的过程
+			2. 如果一个类的static方法，private方法，override方法以及构造函数中引用了其他类，而且这些类都属于同一个dex文件，此时该类就会被打上CLASS_ISPREVERIFIED
+			3. 如果在运行时被打上CLASS_ISPREVERIFIED的类引用了其他dex的类，就会报错
+			4. 正常的分包方案会保证相关类被打入同一个dex文件
+			5. 想要使得patch可以被正常加载，就必须保证类不会被打上CLASS_ISPREVERIFIED标记。而要实现这个目的就必须要在分完包后的class中植入对其他dex文件中类的引用
+
+		2. 解决方法<br>
+			要在已经编译完成后的类中植入对其他类的引用，就需要操作字节码，惯用的方案是插桩。常见的工具有javaassist，asm等<br>
+			QQ空间补丁方案就是使用javaassist 插桩的方式解决了CLASS_ISPREVERIFIED的难题。
+
+	2. Tinker
+		1. 补丁文件过大问题<br>
+			QQ空间超级补丁，“超级补丁”很多情况下意味着补丁文件很大，而将这样一个大文件夹加载在内存中构建一个Element对象，插入到数组最前端是需要耗费时间的,无疑会印象应用启动的速度。
+		2. 实现方法	<br>
+			Tinker的思路是这样的，通过修复好的class.dex 和原有的class.dex比较差生差量包补丁文件patch.dex，在手机上这个patch.dex又会和原有的class.dex 合并生成新的文件fix_class.dex，用这个新的fix_class.dex 整体替换原有的dexPathList的中的内容，可以说是从根本上把bug给干掉了。
+		
+	3. HotFix<br>
+		QQ空间超级补丁方案 和 Tinker，总的来说都是从上层ClassLoader的角度出发，由于ClassLoader的特点，如果想要新的补丁文件再次生效，无论你是插桩还是提前合并，都需要重新启动应用来加载新的DexPathList。这样就无法在用户神不知鬼不觉的情况下把bug修复了。<br>
+		AndFix 提供了一种运行时在Native修改Filed指针的方式，实现方法的替换，达到即时生效无需重启，对应用无性能消耗的目的。<br>
+		由于他是Native层操作，因此如果我们在Java层中新增字段，或者是修改类的方法，他是无能为力的。同时由于Android在国内变成了安卓，各大手机厂商定制了自己的ROM，所以很多底层实现的差异，导致AndFix的兼容性并不是很好。	
+		
+	4. Sophix<br>	
+		Sophix 可以说是博采众长，前面提到的Tinker及AndFix 都在某一方面存在缺陷。因此Sophix 便取长补短，采用全量替换的思路，从一种更高的层次实现了热修复。
+
+	5. 方案总结
+		1. ClassLoader 加载方案
+		2. Native层替换方案
+		3. 参考Android Studio Instant Run 的思路实现代码整体的增量更新。但这样势必会带来性能的影响。
+
+
+10. 参考
+	1. https://www.jianshu.com/p/704cac3eb13d
+
+
+
+
+
+
+
+
+
 
 
 
