@@ -937,7 +937,7 @@ TODO
 		3. https://juejin.im/post/58c90816a22b9d006413f624
 		4. http://gityuan.com/2015/11/28/binder-summary/
 	
-3. Android线程间消息分发机制
+3. Android线程间消息分发机制(Handler)
 	1. 定义<br>
 		一套 Android 消息传递机制
 	2. 构成<br>
@@ -960,9 +960,30 @@ TODO
 	4. 使用情景
 		1. 在将来的某个时间点调度处理消息和runnable对象；
 		2. 将需要执行的操作放到其他线程之中，而不是自己的。比如：将工作线程需操作UI的消息传递到主线程，使得主线程可根据工作线程的需求 更新UI，从而避免线程操作不安全的问题
-
-	5. 参考
+	
+	5. Handler 面试题	
+		1. Handler为什么会造成内存泄露？<br>
+			handler创建的时候，是生成了一个内部类，内部类能直接使用外部类的属性和方法，内部类是默认持有外部类的引用，即Activity。而在handler调用enqueueMessage方法时，将自己赋予了msg的target属性，所以msg是持有handler的引用的。如果某个消息因为延迟执行或者没有处理完成，消息会一直挂载。msg持有handler，handler持有activity导致activity无法回收，造成了内存泄露。<br>
+			解决：将 Handler 定义成静态的内部类，在内部持有 Activity 的弱引用，并在
+Acitivity 的 onDestroy()中调用 handler.removeCallbacksAndMessages(null)及时
+移除所有消息。
+		2. Handler 延迟发送消息<br>
+			题目：为什么Handler可以发送延时的消息？然后接着问说，对比时间之后呢？时间没到是怎么处理的
+		3. Handler是怎么实现切换线程的？<br>
+			当在A线程中创建handler的时候，同时创建了Looper与MessageQueue，Looper在A线程中调用loop进入一个无限的for循环从MessageQueue中取消息。当B线程调用handler发送一个message的时候，会通过msg.target.dispatchMessage(msg);将message插入到handler对应的MessageQueue中，Looper发现有message插入到MessageQueue中，便取出message执行相应的逻辑，因为Looper.loop()是在A线程中启动的，所以则回到了A线程，达到了从B线程切换到A线程的目的。
+		4. 一个线程可以有几个Handler？几个Looper？几个MessageQueue？<br>
+			可以创建无数个Handler，但是他们使用的消息队列都是同一个，也就是同一个Looper。Handler在哪个线程创建的，就跟哪个线程的Looper关联，也可以在Handler的构造方法中传入指定的Looper，Looper.loop()循环读取消息。<br><br>
+			那同一个Looper是怎么区分不同的Handler的？<br>
+			因为在msg入队列时，会将msg.target设置一个handler，处理消息的时候，也会调用msg对象的target去处理消息。
+		5. 可以在子线程直接new一个Handler吗?<br>			可以在子线程直接new一个Handler，不过需要在一个线程里需要先调用Looper.prepare()和Looper.loop()方法。
+		6. Handler如何保证MessageQueue并发访问安全？<br>
+			各个线程都往一个messageQueue中存取msg，在存取数据的时候，是通过synchronized来保证了线程的安全性，使用messageQueue作为对象锁。各个子线程和主线程都是往用一个messageQueue存取消息，对调用同一个MessageQueue对象的线程来说，它们都是互斥的，所以保证了并发访问安全。
+		7. Message 的同步屏障有什么用？有什么意义？<br>
+			在 Handler 中还存在了一种特殊的消息，它的 target 为 null，并不会被消费，仅仅是作为一个标识处于 MessageQueue 中。它就是 SyncBarrier (同步屏障)这种特殊的消息。<br>
+			比如 View 的绘制过程中的 TraversalRunnable 消息就是异步消息，在放入队列之前先放入了一个消息屏障，从而使得界面绘制的消息会比其他消息优先执行，避免了因为 MessageQueue 中消息太多导致绘制消息被阻塞导致画面卡顿，当绘制完成后，就会将消息屏障移除。
+	7. 参考
 		1. https://www.jianshu.com/p/e5b89601562a
+		2. https://www.jianshu.com/p/ea7e0677181d
 		
 ----
 
