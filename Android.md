@@ -383,6 +383,12 @@ TODO
 			1. 这两个方法都是在View的dispatchTouchEvent中调用，但onTouch优先于onTouchEvent执行。
 			2. 如果在onTouch方法中返回true将事件消费掉，onTouchEvent()将不会再执行。
 			3. 如果你有一个控件是非enable的，那么给它注册onTouch事件将永远得不到执行。对于这一类控件，如果我们想要监听它的touch事件，就必须通过在该控件中重写onTouchEvent方法来实现
+	7. 面试题
+		1. 如果一个视图很小，不想改变他的大小，如果扩大他的点击范围<br>
+			使用 TouchDelegate 来扩大点击范围。<br>
+			如果View设置了	TouchDelegate，会把触摸事件分发到这里，这个时候可以根据点击的范围,改变触摸事件的位置，假装它发生在代理控件的中心,并将触摸事件传递给代理控件
+。<br>
+			参考：https://juejin.cn/post/6968237652017414151
 
 	7. 参考
 		1. https://www.jianshu.com/p/e99b5e8bd67b 
@@ -974,16 +980,38 @@ Acitivity 的 onDestroy()中调用 handler.removeCallbacksAndMessages(null)及�
 		4. 一个线程可以有几个Handler？几个Looper？几个MessageQueue？<br>
 			可以创建无数个Handler，但是他们使用的消息队列都是同一个，也就是同一个Looper。Handler在哪个线程创建的，就跟哪个线程的Looper关联，也可以在Handler的构造方法中传入指定的Looper，Looper.loop()循环读取消息。<br><br>
 			那同一个Looper是怎么区分不同的Handler的？<br>
-			因为在msg入队列时，会将msg.target设置一个handler，处理消息的时候，也会调用msg对象的target去处理消息。
+			因为在msg入队列时，会将msg.target设置一个handler，处理消息的时候，也会调用msg对象的target去处理消息。<br>
+			在一个线程中初始化Looper，是用ThreadLocal存储Looper对象。同时保证一个线程只拥有一个Looper，存入looper之前，从sThreadLocal.get()中取看是否存过looper， sThreadLocal中如果存在则会抛出异常，保证一个线程中的looper实例唯一，且一旦存入，不可修改不可新增。(static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<Looper>();)<br>
+			一个线程的looper只会创建一次，只有一个looper对象，一个looper下只有一个MessageQueue属性，所以一个线程只有一个MessageQueue。
 		5. 可以在子线程直接new一个Handler吗?<br>			可以在子线程直接new一个Handler，不过需要在一个线程里需要先调用Looper.prepare()和Looper.loop()方法。
 		6. Handler如何保证MessageQueue并发访问安全？<br>
 			各个线程都往一个messageQueue中存取msg，在存取数据的时候，是通过synchronized来保证了线程的安全性，使用messageQueue作为对象锁。各个子线程和主线程都是往用一个messageQueue存取消息，对调用同一个MessageQueue对象的线程来说，它们都是互斥的，所以保证了并发访问安全。
 		7. Message 的同步屏障有什么用？有什么意义？<br>
 			在 Handler 中还存在了一种特殊的消息，它的 target 为 null，并不会被消费，仅仅是作为一个标识处于 MessageQueue 中。它就是 SyncBarrier (同步屏障)这种特殊的消息。<br>
-			比如 View 的绘制过程中的 TraversalRunnable 消息就是异步消息，在放入队列之前先放入了一个消息屏障，从而使得界面绘制的消息会比其他消息优先执行，避免了因为 MessageQueue 中消息太多导致绘制消息被阻塞导致画面卡顿，当绘制完成后，就会将消息屏障移除。
+			比如 View 的绘制过程中的 TraversalRunnable 消息就是异步消息，在放入队列之前先放入了一个消息屏障，从而使得界面绘制的消息会比其他消息优先执行，避免了因为 MessageQueue 中消息太多导致绘制消息被阻塞导致画面卡顿，当绘制完成后，就会将消息屏障移除。<br>
+			此外用postAtFront()也可以加急处理。想到于给message quene插入一个when=0的消息。
+		8. Looper.loop 中，如果没有待处理的消息，为什么不会阻塞 UI？<br>
+			主线程在 MessageQueue 没有消息时，会阻塞在 loop 的 queue.next() 方法中的 nativePollOnce()方法里。<br>
+			此时主线程会释放 CPU 资源进入休眠状态，直到下一个消息到达或者有事务发生，通过往 pipe 管道写端写入数据的方式，来唤醒主线程。这里采用的是 epoll 机制。<br>
+			epoll 机制是一种 IO 多路复用机制，可以同时监控多个描述符，在有事件发生的时候，立即通知相应程序进行读或写操作，类似一种 callback 的回调机制。主线程在大多数时候是处于休眠状态，并不会消耗大量的 CPU 资源。当有新的消息或事务到达时，会立即唤醒主线程进行处理，所以对用户来说是无感知的。
+		9. HandlerThread是啥？有什么使用场景？<br>
+			HandlerThread就是一个封装了Looper的Thread类。就是为了让我们在子线程里面更方便的使用Handler。
+		10. 什么是IdleHandler？<br>
+			当MessageQueue没有消息的时候，就会阻塞在next方法中，其实在阻塞之前，MessageQueue还会做一件事，就是检查是否存在IdleHandler，如果有，就会去执行它的queueIdle方法。<br>
+			当没有消息处理的时候，就会去处理这个mIdleHandlers集合里面的每个IdleHandler对象，并调用其queueIdle方法。 最后根据queueIdle返回值判断是否用完删除当前的IdleHandler。
+		11. 为什么Handler可以发送延时的消息？对比时间之后呢？时间没到是怎么处理的? <br>
+			下面是自己写的 <br>
+			1) 通过sendMessageAtTime指定执行的时间，并交给MessageQuene<br>
+			2）MessageQuene根据执行时间插入到指定位置，最快要执行的放在最前<br>
+			3）MessageQuene#next 里面，取出最前的消息（最快执行的），假如时间小与当前时间，则交给looper执行；假如时间还没到，就把与当前时间的时间差作为超时时间，设置到  nativePollOnce() ，并进入阻塞等待下一次唤醒
+		12. Handler的阻塞唤醒机制是怎么回事？
+当消息不可用或者没有消息的时候就会阻塞在next方法，会进入nativePollOnce()方法，而阻塞的办法是通过pipe/epoll机制。<br>
+			在enqueueMessage方法中，如果有新的消息进入（when=0，或者目前队列空，或者队列最小的也比这个晚），就调用nativeWake()方法进行唤醒。
+			
 	7. 参考
 		1. https://www.jianshu.com/p/e5b89601562a
 		2. https://www.jianshu.com/p/ea7e0677181d
+		3. https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/os/MessageQueue.java;l=549;drc=master
 		
 ----
 
