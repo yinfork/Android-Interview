@@ -50,9 +50,115 @@
 			    }
 				
 				```
-
 		10. 参考
-			1. https://blog.csdn.net/xuexichiru/article/details/79118041
+			1. https://blog.csdn.net/xuexichiru/article/details/79118041		
+	3. Map			
+		1. HashMap<br>
+			HashMap 大家都清楚，底层是 数组 + 红黑树 + 链表 ，同时其是无序的
+		2. LinkHashMap<br>
+			LinkedHashMap 刚好就比 HashMap 多这一个功能，就是其提供 有序，并且，LinkedHashMap的有序可以按两种顺序排列，一种是按照插入的顺序，一种是按照读取的顺序。<br>
+			其内部是靠 建立一个双向链表 来维护这个顺序的，在每次插入、删除后，都会调用一个函数来进行 双向链表的维护。
+		3. LRUCache<br>
+			有两种方法：1）哈希表 + 双向链表；2）同样有类似的数据结构 LinkedHashMap
+			1）哈希表 + 双向链表<br>
+				双向链表按照被使用的顺序存储了这些键值对，靠近头部的键值对是最近使用的，而靠近尾部的键值对是最久未使用的。哈希表即为普通的哈希映射（HashMap），通过缓存数据的键映射到其在双向链表中的位置。<br>			
+				这样一来，我们首先使用哈希表进行定位，找出缓存项在双向链表中的位置，随后将其移动到双向链表的头部。<br>
+				对于 get 操作，首先判断 key 是否存在：<br>
+					1. 如果 key 不存在，则返回 -1−1；<br>
+					2. 如果 key 存在，则 key 对应的节点是最近被使用的节点。通过哈希表定位到该节点在双向链表中的位置，并将其移动到双向链表的头部，最后返回该节点的值。<br>
+				对于 put 操作，首先判断 key 是否存在：<br>
+					1. 如果 key 不存在，使用 key 和 value 创建一个新的节点，在双向链表的头部添加该节点，并将 key 和该节点添加进哈希表中。然后判断双向链表的节点数是否超出容量，如果超出容量，则删除双向链表的尾部节点，并删除哈希表中对应的项；<br>
+					2. 如果 key 存在，则与 get 操作类似，先通过哈希表定位，再将对应的节点的值更新为 value，并将该节点移到双向链表的头部。
+			
+			```
+			public class LRUCache {
+			    class DLinkedNode {
+			        int key;
+			        int value;
+			        DLinkedNode prev;
+			        DLinkedNode next;
+			        public DLinkedNode() {}
+			        public DLinkedNode(int _key, int _value) {key = _key; value = _value;}
+			    }
+			
+			    private Map<Integer, DLinkedNode> cache = new HashMap<Integer, DLinkedNode>();
+			    private int size;
+			    private int capacity;
+			    private DLinkedNode head, tail;
+			
+			    public LRUCache(int capacity) {
+			        this.size = 0;
+			        this.capacity = capacity;
+			        // 使用伪头部和伪尾部节点
+			        head = new DLinkedNode();
+			        tail = new DLinkedNode();
+			        head.next = tail;
+			        tail.prev = head;
+			    }
+			
+			    public int get(int key) {
+			        DLinkedNode node = cache.get(key);
+			        if (node == null) {
+			            return -1;
+			        }
+			        // 如果 key 存在，先通过哈希表定位，再移到头部
+			        moveToHead(node);
+			        return node.value;
+			    }
+			
+			    public void put(int key, int value) {
+			        DLinkedNode node = cache.get(key);
+			        if (node == null) {
+			            // 如果 key 不存在，创建一个新的节点
+			            DLinkedNode newNode = new DLinkedNode(key, value);
+			            // 添加进哈希表
+			            cache.put(key, newNode);
+			            // 添加至双向链表的头部
+			            addToHead(newNode);
+			            ++size;
+			            if (size > capacity) {
+			                // 如果超出容量，删除双向链表的尾部节点
+			                DLinkedNode tail = removeTail();
+			                // 删除哈希表中对应的项
+			                cache.remove(tail.key);
+			                --size;
+			            }
+			        }
+			        else {
+			            // 如果 key 存在，先通过哈希表定位，再修改 value，并移到头部
+			            node.value = value;
+			            moveToHead(node);
+			        }
+			    }
+			
+			    private void addToHead(DLinkedNode node) {
+			        node.prev = head;
+			        node.next = head.next;
+			        head.next.prev = node;
+			        head.next = node;
+			    }
+			
+			    private void removeNode(DLinkedNode node) {
+			        node.prev.next = node.next;
+			        node.next.prev = node.prev;
+			    }
+			
+			    private void moveToHead(DLinkedNode node) {
+			        removeNode(node);
+			        addToHead(node);
+			    }
+			
+			    private DLinkedNode removeTail() {
+			        DLinkedNode res = tail.prev;
+			        removeNode(res);
+			        return res;
+			    }
+			}
+			```
+			
+			参考：https://leetcode-cn.com/problems/lru-cache/solution/lruhuan-cun-ji-zhi-by-leetcode-solution/
+			
+		
 
 3. 常见算法	
 	1. 排序算法
